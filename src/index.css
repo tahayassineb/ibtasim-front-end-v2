@@ -1,0 +1,390 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   APPLE-INSPIRED DESIGN SYSTEM - ITASSIM
+   Premium Charity Website
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Animation Easings - Apple Style */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+
+  html {
+    @apply antialiased;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-gray-900 font-sans;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Apple-style selection */
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+
+  /* Smooth scrolling for reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Apple-inspired Button Styles */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 
+           bg-gradient-to-b from-primary-500 to-primary-600
+           text-white font-medium rounded-full
+           shadow-lg shadow-primary-500/25
+           transition-all duration-300 ease-out
+           hover:shadow-xl hover:shadow-primary-500/30
+           hover:scale-[1.02]
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3
+           bg-white text-gray-900 font-medium rounded-full
+           border border-gray-200
+           shadow-sm
+           transition-all duration-300 ease-out
+           hover:bg-gray-50 hover:border-gray-300
+           hover:shadow-md
+           active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-4 py-2
+           text-gray-600 font-medium rounded-lg
+           transition-all duration-200
+           hover:bg-gray-100 hover:text-gray-900
+           active:scale-[0.98];
+  }
+
+  /* Apple-style Cards */
+  .card {
+    @apply bg-white rounded-2xl 
+           border border-gray-100
+           shadow-sm
+           transition-all duration-300 ease-out
+           hover:shadow-lg hover:border-gray-200;
+  }
+
+  .card-premium {
+    @apply bg-white rounded-3xl
+           shadow-xl shadow-gray-900/5
+           border border-gray-100
+           overflow-hidden;
+  }
+
+  /* Apple-style Section Spacing */
+  .section {
+    @apply py-24 md:py-32 lg:py-40;
+  }
+
+  .section-sm {
+    @apply py-16 md:py-20 lg:py-24;
+  }
+
+  /* Apple-style Container */
+  .container-apple {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12;
+  }
+
+  .container-narrow {
+    @apply max-w-3xl mx-auto px-4 sm:px-6;
+  }
+
+  /* Apple-style Typography */
+  .display-hero {
+    @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl
+           font-semibold tracking-tight
+           text-gray-900 leading-tight;
+    letter-spacing: -0.02em;
+  }
+
+  .display-section {
+    @apply text-3xl sm:text-4xl md:text-5xl
+           font-semibold tracking-tight
+           text-gray-900 leading-tight;
+    letter-spacing: -0.02em;
+  }
+
+  .text-apple-body {
+    @apply text-lg text-gray-600 leading-relaxed;
+  }
+
+  .text-apple-caption {
+    @apply text-sm font-medium uppercase tracking-wider text-primary-600;
+  }
+
+  /* Glass Morphism - Apple Style */
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl
+           border border-white/20
+           shadow-lg;
+  }
+
+  .glass-dark {
+    @apply bg-gray-900/80 backdrop-blur-xl
+           border border-white/10
+           shadow-lg;
+  }
+
+  /* Apple-style Navigation */
+  .nav-apple {
+    @apply fixed top-0 left-0 right-0 z-50
+           bg-white/80 backdrop-blur-xl
+           border-b border-gray-100
+           transition-all duration-300;
+  }
+
+  .nav-apple-scrolled {
+    @apply bg-white/95 shadow-sm;
+  }
+
+  /* Premium Gradients */
+  .gradient-hero {
+    background: linear-gradient(135deg, 
+      theme('colors.primary.50') 0%, 
+      theme('colors.gray.50') 50%, 
+      theme('colors.secondary.50') 100%);
+  }
+
+  .gradient-warm {
+    background: linear-gradient(180deg,
+      theme('colors.primary.500') 0%,
+      theme('colors.primary.600') 100%);
+  }
+
+  /* Apple-style Form Inputs */
+  .input-apple {
+    @apply w-full px-4 py-3.5
+           bg-gray-50 border border-gray-200
+           rounded-xl
+           text-gray-900 placeholder:text-gray-400
+           transition-all duration-200
+           focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10
+           focus:outline-none;
+  }
+
+  /* Apple-style Progress */
+  .progress-apple {
+    @apply h-2 bg-gray-100 rounded-full overflow-hidden;
+  }
+
+  .progress-apple-bar {
+    @apply h-full bg-gradient-to-r from-primary-500 to-primary-400
+           rounded-full transition-all duration-500 ease-out;
+  }
+
+  /* Apple-style Stats */
+  .stat-card {
+    @apply flex flex-col items-center p-6
+           bg-white rounded-2xl
+           border border-gray-100
+           shadow-sm
+           transition-all duration-300
+           hover:shadow-lg hover:border-gray-200;
+  }
+
+  .stat-value {
+    @apply text-4xl md:text-5xl font-bold text-primary-600
+           tracking-tight;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    @apply mt-2 text-sm font-medium text-gray-600 uppercase tracking-wider;
+  }
+
+  /* Apple-style Feature Grid */
+  .feature-card {
+    @apply p-8 rounded-3xl
+           bg-gradient-to-b from-white to-gray-50/50
+           border border-gray-100
+           transition-all duration-300
+           hover:shadow-xl hover:shadow-gray-900/5
+           hover:border-gray-200;
+  }
+
+  /* Apple-style Image Container */
+  .image-container {
+    @apply relative overflow-hidden rounded-3xl
+           bg-gray-100;
+  }
+
+  .image-container img {
+    @apply w-full h-full object-cover
+           transition-transform duration-700 ease-out
+           hover:scale-105;
+  }
+
+  /* Apple-style Mobile Menu - Fixed */
+  .mobile-menu-apple {
+    @apply fixed inset-0 z-40
+           bg-white/98 backdrop-blur-xl
+           transition-all duration-500;
+  }
+
+  /* Apple-style Footer */
+  .footer-apple {
+    @apply bg-gray-50 border-t border-gray-200
+           py-16 md:py-20;
+  }
+
+  /* Animation Classes */
+  .animate-fade-in {
+    animation: fadeIn 0.6s var(--ease-out-expo) forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s var(--ease-out-expo) forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s var(--ease-out-back) forwards;
+  }
+
+  /* Stagger Animation Delays */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
+
+@layer utilities {
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-500;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Apple-style line clamp */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Custom scrollbar - Apple Style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Focus visible styles */
+:focus-visible {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

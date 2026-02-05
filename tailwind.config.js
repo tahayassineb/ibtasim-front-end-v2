@@ -7,33 +7,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary: Warm Golden Yellow (Main Brand)
+        // Primary: Logo Teal (#0D7377)
         primary: {
-          50: '#FFFBEB',
-          100: '#FEF3C7',
-          200: '#FDE68A',
-          300: '#FCD34D',
-          400: '#FBBF24',
-          500: '#F59E0B',
-          600: '#D97706',
-          700: '#B45309',
-          800: '#92400E',
-          900: '#78350F',
-          950: '#451A03',
+          50: '#E6F4F4',
+          100: '#CCF0F0',
+          200: '#99E0E0',
+          300: '#66D0D0',
+          400: '#33C0C0',
+          500: '#0D7377',
+          600: '#0A5C5F',
+          700: '#074547',
+          800: '#052E2F',
+          900: '#021718',
+          950: '#010C0D',
         },
-        // Secondary: Trust Blue (Supporting)
+        // Secondary: Warm Coral/Orange Accent
         secondary: {
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          200: '#BFDBFE',
-          300: '#93C5FD',
-          400: '#60A5FA',
-          500: '#3B82F6',
-          600: '#2563EB',
-          700: '#1D4ED8',
-          800: '#1E40AF',
-          900: '#1E3A8A',
-          950: '#172554',
+          50: '#FFF5F0',
+          100: '#FFE8DE',
+          200: '#FFD0BD',
+          300: '#FFB89C',
+          400: '#FFA07B',
+          500: '#E87A54',
+          600: '#D46540',
+          700: '#B85030',
+          800: '#8C3B24',
+          900: '#5C2618',
+          950: '#2E130C',
         },
         // Warm Neutral Grays - Apple Style
         gray: {

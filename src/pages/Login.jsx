@@ -1,543 +1,329 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Heart, MessageCircle, ArrowLeft, ArrowRight, User, Mail, Lock, CheckCircle } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import CountryCodeSelector from '../components/CountryCodeSelector';
+import Button from '../components/Button';
+import Input from '../components/Input';
 
-// Auto-fill Verification Code Component
-const VerificationCodeInput = ({ code, setCode, error, setError, onComplete }) => {
-  const inputRefs = useRef([]);
-
-  // Auto-focus first input on mount
-  useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
-
-  const handleChange = (index, value) => {
-    if (!/^\d?$/.test(value)) return;
-    
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-    setError('');
-
-    // Auto-advance to next field
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Check if complete
-    if (newCode.every(digit => digit !== '') && newCode.join('').length === 6) {
-      onComplete?.(newCode.join(''));
-    }
-  };
-
-  const handleKeyDown = (index, e) => {
-    // Backspace on empty field goes to previous
-    if (e.key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-    // Arrow keys navigation
-    if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-    if (e.key === 'ArrowRight' && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pastedData) {
-      const newCode = [...code];
-      for (let i = 0; i < pastedData.length && i < 6; i++) {
-        newCode[i] = pastedData[i];
-      }
-      setCode(newCode);
-      // Focus the next empty field or last field
-      const nextEmptyIndex = newCode.findIndex(d => d === '');
-      if (nextEmptyIndex !== -1) {
-        inputRefs.current[nextEmptyIndex]?.focus();
-      } else {
-        inputRefs.current[5]?.focus();
-      }
-      if (pastedData.length === 6) {
-        onComplete?.(pastedData);
-      }
-    }
-  };
-
-  return (
-    <div className="flex justify-center gap-2" dir="ltr">
-      {code.map((digit, index) => (
-        <input
-          key={index}
-          ref={el => inputRefs.current[index] = el}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={digit}
-          onChange={(e) => handleChange(index, e.target.value)}
-          onKeyDown={(e) => handleKeyDown(index, e)}
-          onPaste={handlePaste}
-          className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl outline-none transition-all duration-200 ${
-            digit 
-              ? 'border-primary-500 bg-primary-50 text-primary-700' 
-              : 'border-gray-300 bg-white text-gray-900'
-          } ${error ? 'border-red-500 shake' : ''} focus:border-primary-500 focus:ring-4 focus:ring-primary-100`}
-        />
-      ))}
-    </div>
-  );
-};
+// ============================================
+// LOGIN PAGE - User Authentication
+// ============================================
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loginAsAdmin, donors, language } = useApp();
+  const { t, currentLanguage, login, showToast } = useApp();
   
-  // Get redirect path from query params
-  const searchParams = new URLSearchParams(location.search);
-  const redirectTo = searchParams.get('redirect') || '/projets';
-  
-  const [step, setStep] = useState('register'); // 'register' | 'verify'
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    countryCode: '+212',
-    country: 'MA'
-  });
-  const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [countdown, setCountdown] = useState(45);
-  const [error, setError] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [errors, setErrors] = useState({});
+  
+  const isRTL = currentLanguage.dir === 'rtl';
+  
+  // Translations
   const translations = {
     ar: {
-      loginTitle: 'إنشاء حساب',
-      verifyTitle: 'تأكيد الرقم',
-      nameLabel: 'الاسم الكامل',
-      namePlaceholder: 'محمد أحمد',
-      nameRequired: 'الاسم مطلوب',
-      emailLabel: 'البريد الإلكتروني',
-      emailPlaceholder: 'your@email.com',
-      emailRequired: 'البريد الإلكتروني مطلوب',
-      emailInvalid: 'بريد إلكتروني غير صالح',
-      phoneLabel: 'رقم الواتساب',
-      phonePlaceholder: '6XX XXX XXX',
-      phoneRequired: 'رقم الهاتف مطلوب',
-      phoneIncomplete: 'الرقم غير مكتمل',
-      createAccount: 'إنشاء حساب',
-      verifying: 'جاري التحقق...',
-      codeSent: 'تم إرسال رمز التحقق إلى',
-      enterCode: 'أدخل الرمز المكون من 6 أرقام',
-      verify: 'تأكيد',
-      resendIn: 'إعادة الإرسال بعد',
-      resendCode: 'إعادة إرسال الرمز',
-      back: '← رجوع',
-      haveAccount: 'لديك حساب؟',
-      login: 'تسجيل الدخول',
-      agreement: 'بإنشاء حساب، أنت توافق على',
-      terms: 'شروط الاستخدام',
-      and: 'و',
-      privacy: 'سياسة الخصوصية',
-      codeIncomplete: 'الرجاء إدخال الرمز كاملاً',
-      codeInvalid: 'الرمز غير صحيح',
-      success: 'تم إنشاء الحساب بنجاح!',
-      requiredForDonation: 'مطلوب للتبرع - أنشئ حسابك في دقيقة واحدة'
+      title: 'تسجيل الدخول',
+      welcome: 'مرحباً بك مجدداً في جمعية الأمل',
+      phoneLabel: 'رقم الهاتف',
+      phonePlaceholder: '06 XX XX XX XX',
+      passwordLabel: 'كلمة المرور',
+      passwordPlaceholder: '••••••••',
+      forgotPassword: 'هل نسيت كلمة المرور؟',
+      loginButton: 'تسجيل الدخول',
+      noAccount: 'ليس لديك حساب؟',
+      registerNow: 'سجل الآن',
+      termsText: 'بالتسجيل، أنت توافق على شروط الخدمة وسياسة الخصوصية الخاصة بالجمعية',
+      phoneError: 'يرجى إدخال رقم هاتف صحيح',
+      passwordError: 'يرجى إدخال كلمة المرور',
+      loginError: 'رقم الهاتف أو كلمة المرور غير صحيحة',
     },
     fr: {
-      loginTitle: 'Créer un compte',
-      verifyTitle: 'Vérification',
-      nameLabel: 'Nom complet',
-      namePlaceholder: 'Prénom Nom',
-      nameRequired: 'Le nom est requis',
-      emailLabel: 'Email',
-      emailPlaceholder: 'votre@email.com',
-      emailRequired: 'L\'email est requis',
-      emailInvalid: 'Email invalide',
-      phoneLabel: 'Numéro WhatsApp',
-      phonePlaceholder: '6XX XXX XXX',
-      phoneRequired: 'Le numéro est requis',
-      phoneIncomplete: 'Numéro incomplet',
-      createAccount: 'Créer un compte',
-      verifying: 'Vérification...',
-      codeSent: 'Code envoyé au',
-      enterCode: 'Entrez le code à 6 chiffres',
-      verify: 'Vérifier',
-      resendIn: 'Renvoyer dans',
-      resendCode: 'Renvoyer le code',
-      back: '← Retour',
-      haveAccount: 'Déjà un compte?',
-      login: 'Se connecter',
-      agreement: 'En créant un compte, vous acceptez',
-      terms: 'les conditions d\'utilisation',
-      and: 'et',
-      privacy: 'la politique de confidentialité',
-      codeIncomplete: 'Veuillez entrer le code complet',
-      codeInvalid: 'Code invalide',
-      success: 'Compte créé avec succès!',
-      requiredForDonation: 'Requis pour donner - Créez votre compte en 1 minute'
+      title: 'Connexion',
+      welcome: 'Bon retour à Association Espoir',
+      phoneLabel: 'Numéro de téléphone',
+      phonePlaceholder: '06 XX XX XX XX',
+      passwordLabel: 'Mot de passe',
+      passwordPlaceholder: '••••••••',
+      forgotPassword: 'Mot de passe oublié?',
+      loginButton: 'Se connecter',
+      noAccount: 'Vous n\'avez pas de compte?',
+      registerNow: 'Inscrivez-vous',
+      termsText: 'En vous inscrivant, vous acceptez les conditions de service et la politique de confidentialité',
+      phoneError: 'Veuillez entrer un numéro de téléphone valide',
+      passwordError: 'Veuillez entrer votre mot de passe',
+      loginError: 'Numéro de téléphone ou mot de passe incorrect',
     },
     en: {
-      loginTitle: 'Create Account',
-      verifyTitle: 'Verification',
-      nameLabel: 'Full Name',
-      namePlaceholder: 'First Last',
-      nameRequired: 'Name is required',
-      emailLabel: 'Email',
-      emailPlaceholder: 'your@email.com',
-      emailRequired: 'Email is required',
-      emailInvalid: 'Invalid email',
-      phoneLabel: 'WhatsApp Number',
-      phonePlaceholder: '6XX XXX XXX',
-      phoneRequired: 'Phone number is required',
-      phoneIncomplete: 'Incomplete number',
-      createAccount: 'Create Account',
-      verifying: 'Verifying...',
-      codeSent: 'Code sent to',
-      enterCode: 'Enter 6-digit code',
-      verify: 'Verify',
-      resendIn: 'Resend in',
-      resendCode: 'Resend code',
-      back: '← Back',
-      haveAccount: 'Already have an account?',
-      login: 'Log in',
-      agreement: 'By creating an account, you agree to',
-      terms: 'Terms of Service',
-      and: 'and',
-      privacy: 'Privacy Policy',
-      codeIncomplete: 'Please enter the complete code',
-      codeInvalid: 'Invalid code',
-      success: 'Account created successfully!',
-      requiredForDonation: 'Required to donate - Create your account in 1 minute'
-    }
+      title: 'Login',
+      welcome: 'Welcome back to Association Espoir',
+      phoneLabel: 'Phone Number',
+      phonePlaceholder: '06 XX XX XX XX',
+      passwordLabel: 'Password',
+      passwordPlaceholder: '••••••••',
+      forgotPassword: 'Forgot password?',
+      loginButton: 'Login',
+      noAccount: 'Don\'t have an account?',
+      registerNow: 'Register now',
+      termsText: 'By registering, you agree to the terms of service and privacy policy',
+      phoneError: 'Please enter a valid phone number',
+      passwordError: 'Please enter your password',
+      loginError: 'Invalid phone number or password',
+    },
   };
-
-  const t = translations[language] || translations.ar;
-  const isRTL = language === 'ar';
-  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
-
-  useEffect(() => {
-    if (step === 'verify' && countdown > 0) {
-      const timer = setInterval(() => setCountdown(c => c - 1), 1000);
-      return () => clearInterval(timer);
-    }
-  }, [step, countdown]);
-
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
+  
+  const tx = translations[currentLanguage.code] || translations.fr;
+  
+  // Validate phone number (Moroccan format)
   const validatePhone = (phone) => {
-    // Remove all non-digits for validation
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 9;
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length === 10 && (cleaned.startsWith('06') || cleaned.startsWith('07') || cleaned.startsWith('05'));
   };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setError('');
+  
+  // Handle phone input change
+  const handlePhoneChange = useCallback((e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 10) value = value.slice(0, 10);
+    setPhoneNumber(value);
+    if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+  }, [errors.phone]);
+  
+  // Handle password change
+  const handlePasswordChange = useCallback((e) => {
+    setPassword(e.target.value);
+    if (errors.password) setErrors(prev => ({ ...prev, password: null }));
+  }, [errors.password]);
+  
+  // Format phone number for display
+  const formatPhoneDisplay = (phone) => {
+    if (!phone) return '';
+    if (phone.length <= 2) return phone;
+    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
+    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
+    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
   };
-
-  const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 15) {
-      setFormData(prev => ({ ...prev, phone: value }));
-      setError('');
-    }
-  };
-
-  const handleCountryChange = (country) => {
-    setFormData(prev => ({
-      ...prev,
-      countryCode: country.dialCode,
-      country: country.code
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.name.trim()) {
-      setError(t.nameRequired);
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError(t.emailRequired);
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      setError(t.emailInvalid);
-      return;
-    }
-    if (!formData.phone) {
-      setError(t.phoneRequired);
-      return;
-    }
-    if (!validatePhone(formData.phone)) {
-      setError(t.phoneIncomplete);
-      return;
-    }
-
-    // Simulate sending code
-    setStep('verify');
-    setCountdown(45);
-  };
-
-  const handleVerify = (fullCode) => {
-    const verificationCode = fullCode || code.join('');
+    const newErrors = {};
     
-    if (verificationCode.length !== 6) {
-      setError(t.codeIncomplete);
+    if (!validatePhone(phoneNumber)) {
+      newErrors.phone = tx.phoneError;
+    }
+    
+    if (!password || password.length < 6) {
+      newErrors.password = tx.passwordError;
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-
+    
     setIsLoading(true);
-
-    // Simulate API verification
-    setTimeout(() => {
-      // Check if user exists
-      const existingDonor = donors.find(d => d.phone?.includes(formData.phone));
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (existingDonor) {
-        login(existingDonor);
-      } else {
-        // Create new user
-        const newUser = {
-          id: Date.now(),
-          name: formData.name,
-          email: formData.email,
-          phone: `${formData.countryCode} ${formData.phone}`,
-          country: formData.country,
-          memberSince: new Date().toISOString().split('T')[0],
-          donations: [],
-          followedProjects: [],
-          preferences: { whatsappUpdates: true, emailNews: true },
-        };
-        login(newUser);
-      }
+      // Demo login - accept any valid format
+      const userData = {
+        id: 'user_' + Date.now(),
+        name: 'Mohammed Alami',
+        phone: '+212 ' + formatPhoneDisplay(phoneNumber),
+        email: 'mohammed@example.com',
+        avatar: null,
+        createdAt: new Date().toISOString(),
+        donations: [
+          {
+            id: 'DON-001',
+            amount: 500,
+            project: 'Atlas Mountain Education',
+            date: '2024-01-15',
+            status: 'verified',
+          },
+          {
+            id: 'DON-002',
+            amount: 200,
+            project: 'Clean Water Initiative',
+            date: '2024-02-01',
+            status: 'pending',
+          },
+        ],
+      };
       
+      login(userData);
+      showToast(currentLanguage.code === 'ar' ? 'تم تسجيل الدخول بنجاح' : 
+                 currentLanguage.code === 'fr' ? 'Connexion réussie' : 
+                 'Login successful', 'success');
+      
+      // Redirect to intended page or home
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+      
+    } catch (error) {
+      setErrors({ general: tx.loginError });
+      showToast(tx.loginError, 'error');
+    } finally {
       setIsLoading(false);
-      navigate(redirectTo);
-    }, 1500);
-  };
-
-  const handleResend = () => {
-    if (countdown === 0) {
-      setCountdown(45);
-      // Simulate resend
     }
   };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  
+  // Handle back navigation
+  const handleBack = () => {
+    navigate(-1);
   };
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary-500/30">
-            <Heart className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {step === 'register' ? t.loginTitle : t.verifyTitle}
-          </h1>
-          {step === 'register' && (
-            <p className="text-gray-500 mt-2 text-sm">{t.requiredForDonation}</p>
-          )}
+    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col items-center">
+      <div className="relative flex h-full min-h-screen w-full max-w-[430px] flex-col bg-background-light dark:bg-background-dark overflow-x-hidden shadow-2xl">
+        
+        {/* Header */}
+        <div className="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between">
+          <button 
+            onClick={handleBack}
+            className="text-primary dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-primary/10 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[24px]">
+              {isRTL ? 'arrow_forward' : 'arrow_back'}
+            </span>
+          </button>
+          <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
+            Association Espoir
+          </h2>
+          <div className="size-12"></div>
         </div>
-
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-8">
-          {step === 'register' ? (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Name Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t.nameLabel}
-                </label>
-                <div className="relative">
-                  <User className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder={t.namePlaceholder}
-                    className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all`}
-                  />
-                </div>
+        
+        {/* Logo & Title */}
+        <div className="flex flex-col items-center justify-center pt-10 pb-6">
+          <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-primary text-4xl">volunteer_activism</span>
+          </div>
+          <h2 className="text-slate-900 dark:text-white tracking-tight text-[28px] font-bold leading-tight px-4 text-center">
+            {tx.title}
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal pb-3 pt-1 px-8 text-center">
+            {tx.welcome}
+          </p>
+        </div>
+        
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 px-6 py-3">
+          
+          {/* Phone Number Input */}
+          <div className="flex flex-col gap-2">
+            <label className="text-slate-700 dark:text-slate-200 text-sm font-medium px-1">
+              {tx.phoneLabel}
+            </label>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
+                phone
+              </span>
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-600 dark:text-slate-300 text-sm font-medium">
+                <span>+212</span>
               </div>
-
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t.emailLabel}
-                </label>
-                <div className="relative">
-                  <Mail className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder={t.emailPlaceholder}
-                    className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all`}
-                  />
-                </div>
-              </div>
-
-              {/* Phone Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t.phoneLabel}
-                </label>
-                <div className="flex gap-2">
-                  <CountryCodeSelector
-                    selectedCountry={formData.country}
-                    onSelect={handleCountryChange}
-                    language={language}
-                  />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    placeholder={t.phonePlaceholder}
-                    className={`flex-1 py-3 px-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all`}
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">{error}</p>
-              )}
-
+              <input
+                type="tel"
+                value={formatPhoneDisplay(phoneNumber)}
+                onChange={handlePhoneChange}
+                placeholder={tx.phonePlaceholder}
+                dir="ltr"
+                className={`
+                  w-full h-14 pr-12 pl-20 rounded-xl border 
+                  ${errors.phone ? 'border-error focus:border-error focus:ring-error/20' : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-primary/20'}
+                  bg-white dark:bg-slate-800 text-slate-900 dark:text-white 
+                  focus:ring-2 transition-all text-base
+                `}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-error text-xs px-1">{errors.phone}</p>
+            )}
+          </div>
+          
+          {/* Password Input */}
+          <div className="flex flex-col gap-2">
+            <label className="text-slate-700 dark:text-slate-200 text-sm font-medium px-1">
+              {tx.passwordLabel}
+            </label>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
+                lock
+              </span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder={tx.passwordPlaceholder}
+                className={`
+                  w-full h-14 pr-12 pl-12 rounded-xl border 
+                  ${errors.password ? 'border-error focus:border-error focus:ring-error/20' : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-primary/20'}
+                  bg-white dark:bg-slate-800 text-slate-900 dark:text-white 
+                  focus:ring-2 transition-all text-base
+                `}
+              />
               <button
-                type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-primary-500/30 transition-all duration-300 flex items-center justify-center gap-2"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
               >
-                {t.createAccount}
-                <ArrowIcon className="w-5 h-5" />
+                <span className="material-symbols-outlined text-[20px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
               </button>
-
-              {/* Terms Agreement */}
-              <p className="text-center text-xs text-gray-500 leading-relaxed">
-                {t.agreement}{' '}
-                <Link to="/terms" className="text-primary-600 hover:underline">{t.terms}</Link>{' '}
-                {t.and}{' '}
-                <Link to="/privacy" className="text-primary-600 hover:underline">{t.privacy}</Link>
-              </p>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <button
-                onClick={() => setStep('register')}
-                className="flex items-center text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <ArrowLeft className={`w-4 h-4 ${isRTL ? 'ml-1 rotate-180' : 'mr-1'}`} />
-                {t.back}
-              </button>
-
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <p className="text-gray-600 mb-1">
-                  {t.codeSent}
-                </p>
-                <p className="font-semibold text-gray-900">
-                  {formData.countryCode} {formData.phone}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p className="text-sm text-gray-500 mb-4">{t.enterCode}</p>
-                <VerificationCodeInput
-                  code={code}
-                  setCode={setCode}
-                  error={error}
-                  setError={setError}
-                  onComplete={handleVerify}
-                />
-              </div>
-
-              {error && (
-                <p className="text-red-500 text-sm text-center bg-red-50 p-3 rounded-lg">{error}</p>
-              )}
-
-              <button
-                onClick={() => handleVerify()}
-                disabled={isLoading || code.join('').length !== 6}
-                className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-primary-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    {t.verifying}
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    {t.verify}
-                  </>
-                )}
-              </button>
-
-              <p className="text-center text-sm">
-                {countdown > 0 ? (
-                  <span className="text-gray-500">
-                    {t.resendIn} <span className="font-medium text-gray-700">{formatTime(countdown)}</span>
-                  </span>
-                ) : (
-                  <button
-                    onClick={handleResend}
-                    className="text-primary-600 font-medium hover:underline"
-                  >
-                    {t.resendCode}
-                  </button>
-                )}
-              </p>
+            </div>
+            {errors.password && (
+              <p className="text-error text-xs px-1">{errors.password}</p>
+            )}
+          </div>
+          
+          {/* Forgot Password */}
+          <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
+            <Link 
+              to="/forgot-password" 
+              className="text-primary text-sm font-medium hover:underline"
+            >
+              {tx.forgotPassword}
+            </Link>
+          </div>
+          
+          {/* General Error */}
+          {errors.general && (
+            <div className="p-3 bg-error/10 border border-error/20 rounded-xl">
+              <p className="text-error text-sm text-center">{errors.general}</p>
             </div>
           )}
-        </div>
-
-        {/* Back to Home */}
-        <div className="mt-6 text-center">
-          <Link
-            to="/"
-            className="text-sm text-gray-500 hover:text-primary-600 transition-colors"
+          
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            variant="primary"
+            size="xl"
+            fullWidth
+            loading={isLoading}
+            className="mt-4 shadow-lg shadow-primary/20"
           >
-            ← {language === 'ar' ? 'العودة للرئيسية' : language === 'fr' ? 'Retour à l\'accueil' : 'Back to Home'}
-          </Link>
+            {tx.loginButton}
+          </Button>
+        </form>
+        
+        {/* Footer */}
+        <div className="mt-auto p-8 flex flex-col items-center gap-6">
+          <p className="text-slate-600 dark:text-slate-400 text-sm">
+            {tx.noAccount}
+            <Link to="/register" className="text-primary font-bold hover:underline mx-1">
+              {tx.registerNow}
+            </Link>
+          </p>
+          <p className="text-slate-400 text-[11px] text-center px-4">
+            {tx.termsText}
+          </p>
         </div>
-
-        {/* Admin quick access for demo - hidden in production */}
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => {
-              loginAsAdmin({
-                id: 999,
-                name: 'Admin',
-                email: 'admin@itassim.ma',
-                role: 'admin'
-              });
-              navigate('/admin');
-            }}
-            className="text-xs text-gray-400 hover:text-primary-600 transition-colors"
-          >
-            [Demo] Admin Access
-          </button>
-        </div>
+        
+        <div className="h-8 w-full"></div>
       </div>
     </div>
   );

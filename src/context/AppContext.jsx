@@ -1,7 +1,502 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { projects as initialProjects, donations as initialDonations, donors as initialDonors, currentUser as initialUser, associationInfo, stats } from '../data/sampleData';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+
+// ============================================
+// APP CONTEXT - Global State Management
+// ============================================
 
 const AppContext = createContext();
+
+// Supported languages
+export const LANGUAGES = {
+  ar: {
+    code: 'ar',
+    name: 'العربية',
+    dir: 'rtl',
+    fontFamily: "'Tajawal', sans-serif",
+  },
+  fr: {
+    code: 'fr',
+    name: 'Français',
+    dir: 'ltr',
+    fontFamily: "'Inter', sans-serif",
+  },
+  en: {
+    code: 'en',
+    name: 'English',
+    dir: 'ltr',
+    fontFamily: "'Inter', sans-serif",
+  },
+};
+
+// Translation dictionary
+const TRANSLATIONS = {
+  ar: {
+    // Navigation
+    home: 'الرئيسية',
+    projects: 'المشاريع',
+    donate: 'تبرع الآن',
+    about: 'من نحن',
+    contact: 'اتصل بنا',
+    login: 'تسجيل الدخول',
+    register: 'إنشاء حساب',
+    logout: 'تسجيل الخروج',
+    profile: 'الملف الشخصي',
+    
+    // Actions
+    save: 'حفظ',
+    cancel: 'إلغاء',
+    confirm: 'تأكيد',
+    delete: 'حذف',
+    edit: 'تعديل',
+    view: 'عرض',
+    search: 'بحث',
+    filter: 'تصفية',
+    sort: 'ترتيب',
+    
+    // Donation
+    amount: 'المبلغ',
+    goal: 'الهدف',
+    raised: 'تم جمعه',
+    donors: 'المتبرعون',
+    daysLeft: 'يوم متبقي',
+    contribute: 'ساهم في هذا المشروع',
+    
+    // Status
+    pending: 'قيد الانتظار',
+    verified: 'تم التحقق',
+    rejected: 'مرفوض',
+    completed: 'مكتمل',
+    active: 'نشط',
+    
+    // Messages
+    loading: 'جاري التحميل...',
+    error: 'حدث خطأ',
+    success: 'تم بنجاح',
+    noData: 'لا توجد بيانات',
+    
+    // Currency
+    currency: 'درهم',
+    currencyCode: 'MAD',
+  },
+  fr: {
+    // Navigation
+    home: 'Accueil',
+    projects: 'Projets',
+    donate: 'Faire un don',
+    about: 'À propos',
+    contact: 'Contact',
+    login: 'Connexion',
+    register: 'Inscription',
+    logout: 'Déconnexion',
+    profile: 'Profil',
+    
+    // Actions
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    confirm: 'Confirmer',
+    delete: 'Supprimer',
+    edit: 'Modifier',
+    view: 'Voir',
+    search: 'Rechercher',
+    filter: 'Filtrer',
+    sort: 'Trier',
+    
+    // Donation
+    amount: 'Montant',
+    goal: 'Objectif',
+    raised: 'Collecté',
+    donors: 'Donateurs',
+    daysLeft: 'jours restants',
+    contribute: 'Contribuer à ce projet',
+    
+    // Status
+    pending: 'En attente',
+    verified: 'Vérifié',
+    rejected: 'Rejeté',
+    completed: 'Terminé',
+    active: 'Actif',
+    
+    // Messages
+    loading: 'Chargement...',
+    error: 'Une erreur est survenue',
+    success: 'Succès',
+    noData: 'Aucune donnée',
+    
+    // Currency
+    currency: 'Dirham',
+    currencyCode: 'MAD',
+  },
+  en: {
+    // Navigation
+    home: 'Home',
+    projects: 'Projects',
+    donate: 'Donate Now',
+    about: 'About',
+    contact: 'Contact',
+    login: 'Login',
+    register: 'Register',
+    logout: 'Logout',
+    profile: 'Profile',
+    
+    // Actions
+    save: 'Save',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    delete: 'Delete',
+    edit: 'Edit',
+    view: 'View',
+    search: 'Search',
+    filter: 'Filter',
+    sort: 'Sort',
+    
+    // Donation
+    amount: 'Amount',
+    goal: 'Goal',
+    raised: 'Raised',
+    donors: 'Donors',
+    daysLeft: 'days left',
+    contribute: 'Contribute to this project',
+    
+    // Status
+    pending: 'Pending',
+    verified: 'Verified',
+    rejected: 'Rejected',
+    completed: 'Completed',
+    active: 'Active',
+    
+    // Messages
+    loading: 'Loading...',
+    error: 'An error occurred',
+    success: 'Success',
+    noData: 'No data available',
+    
+    // Currency
+    currency: 'Dirham',
+    currencyCode: 'MAD',
+  },
+};
+
+// ============================================
+// PROVIDER COMPONENT
+// ============================================
+
+export const AppProvider = ({ children }) => {
+  // Language State
+  const [language, setLanguage] = useState(() => {
+    const saved = localStorage.getItem('app-language');
+    return saved || 'fr';
+  });
+
+  // User Authentication State
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('app-user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('app-user');
+  });
+
+  // Donation Flow State
+  const [donationState, setDonationState] = useState(() => {
+    const saved = localStorage.getItem('donation-state');
+    return saved ? JSON.parse(saved) : {
+      projectId: null,
+      amount: null,
+      paymentMethod: null,
+      phoneNumber: null,
+      receipt: null,
+      step: 1,
+    };
+  });
+
+  // Toast/Notification State
+  const [toast, setToast] = useState(null);
+
+  // Dark Mode State
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('app-dark-mode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // ============================================
+  // LANGUAGE FUNCTIONS
+  // ============================================
+
+  const changeLanguage = useCallback((langCode) => {
+    if (LANGUAGES[langCode]) {
+      setLanguage(langCode);
+      localStorage.setItem('app-language', langCode);
+      document.documentElement.dir = LANGUAGES[langCode].dir;
+      document.documentElement.lang = langCode;
+    }
+  }, []);
+
+  const t = useCallback((key) => {
+    return TRANSLATIONS[language]?.[key] || key;
+  }, [language]);
+
+  const currentLanguage = useMemo(() => LANGUAGES[language], [language]);
+
+  // ============================================
+  // AUTHENTICATION FUNCTIONS
+  // ============================================
+
+  const login = useCallback((userData) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+    localStorage.setItem('app-user', JSON.stringify(userData));
+  }, []);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('app-user');
+  }, []);
+
+  const updateUser = useCallback((updates) => {
+    setUser(prev => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('app-user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // ============================================
+  // DONATION FLOW FUNCTIONS
+  // ============================================
+
+  const updateDonation = useCallback((updates) => {
+    setDonationState(prev => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem('donation-state', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const resetDonation = useCallback(() => {
+    const initial = {
+      projectId: null,
+      amount: null,
+      paymentMethod: null,
+      phoneNumber: null,
+      receipt: null,
+      step: 1,
+    };
+    setDonationState(initial);
+    localStorage.removeItem('donation-state');
+  }, []);
+
+  const nextDonationStep = useCallback(() => {
+    setDonationState(prev => {
+      const updated = { ...prev, step: Math.min(prev.step + 1, 5) };
+      localStorage.setItem('donation-state', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const prevDonationStep = useCallback(() => {
+    setDonationState(prev => {
+      const updated = { ...prev, step: Math.max(prev.step - 1, 1) };
+      localStorage.setItem('donation-state', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // ============================================
+  // TOAST FUNCTIONS
+  // ============================================
+
+  const showToast = useCallback((message, type = 'info', duration = 3000) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), duration);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToast(null);
+  }, []);
+
+  // ============================================
+  // THEME FUNCTIONS
+  // ============================================
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => {
+      const newValue = !prev;
+      localStorage.setItem('app-dark-mode', JSON.stringify(newValue));
+      if (newValue) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return newValue;
+    });
+  }, []);
+
+  const setDarkMode = useCallback((value) => {
+    setIsDarkMode(value);
+    localStorage.setItem('app-dark-mode', JSON.stringify(value));
+    if (value) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  // ============================================
+  // HELPER FUNCTIONS
+  // ============================================
+
+  const formatCurrency = useCallback((amount, showCurrency = true) => {
+    if (amount === null || amount === undefined) return '-';
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const formatted = new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : language === 'fr' ? 'fr-MA' : 'en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(numAmount);
+    
+    if (showCurrency) {
+      return language === 'ar' 
+        ? `${formatted} ${TRANSLATIONS.ar.currency}`
+        : `${formatted} ${TRANSLATIONS[language].currencyCode}`;
+    }
+    return formatted;
+  }, [language]);
+
+  const formatDate = useCallback((date, options = {}) => {
+    if (!date) return '-';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const defaultOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      ...options,
+    };
+    return new Intl.DateTimeFormat(
+      language === 'ar' ? 'ar-MA' : language === 'fr' ? 'fr-FR' : 'en-US',
+      defaultOptions
+    ).format(d);
+  }, [language]);
+
+  const formatPhoneNumber = useCallback((phone) => {
+    if (!phone) return '';
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10 && cleaned.startsWith('0')) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+    }
+    if (cleaned.length === 12 && cleaned.startsWith('212')) {
+      return cleaned.replace(/(212)(\d{3})(\d{3})(\d{3})/, '+$1 $2 $3 $4');
+    }
+    return phone;
+  }, []);
+
+  const formatRelativeTime = useCallback((date) => {
+    if (!date) return '-';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - d) / 1000);
+    
+    const rtf = new Intl.RelativeTimeFormat(language === 'ar' ? 'ar' : language === 'fr' ? 'fr' : 'en', { numeric: 'auto' });
+    
+    if (diffInSeconds < 60) return rtf.format(-diffInSeconds, 'second');
+    if (diffInSeconds < 3600) return rtf.format(-Math.floor(diffInSeconds / 60), 'minute');
+    if (diffInSeconds < 86400) return rtf.format(-Math.floor(diffInSeconds / 3600), 'hour');
+    if (diffInSeconds < 604800) return rtf.format(-Math.floor(diffInSeconds / 86400), 'day');
+    if (diffInSeconds < 2592000) return rtf.format(-Math.floor(diffInSeconds / 604800), 'week');
+    if (diffInSeconds < 31536000) return rtf.format(-Math.floor(diffInSeconds / 2592000), 'month');
+    return rtf.format(-Math.floor(diffInSeconds / 31536000), 'year');
+  }, [language]);
+
+  const calculateProgress = useCallback((raised, goal) => {
+    if (!goal || goal === 0) return 0;
+    return Math.min(Math.round((raised / goal) * 100), 100);
+  }, []);
+
+  const daysRemaining = useCallback((endDate) => {
+    if (!endDate) return null;
+    const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
+    const now = new Date();
+    const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }, []);
+
+  // ============================================
+  // INITIALIZATION EFFECTS
+  // ============================================
+
+  useEffect(() => {
+    // Set initial direction and language
+    document.documentElement.dir = currentLanguage.dir;
+    document.documentElement.lang = language;
+    
+    // Set initial dark mode
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  // ============================================
+  // CONTEXT VALUE
+  // ============================================
+
+  const value = useMemo(() => ({
+    // Language
+    language,
+    currentLanguage,
+    changeLanguage,
+    t,
+    languages: LANGUAGES,
+    
+    // Authentication
+    user,
+    isAuthenticated,
+    login,
+    logout,
+    updateUser,
+    
+    // Donation
+    donationState,
+    updateDonation,
+    resetDonation,
+    nextDonationStep,
+    prevDonationStep,
+    
+    // Toast
+    toast,
+    showToast,
+    hideToast,
+    
+    // Theme
+    isDarkMode,
+    toggleDarkMode,
+    setDarkMode,
+    
+    // Helpers
+    formatCurrency,
+    formatDate,
+    formatPhoneNumber,
+    formatRelativeTime,
+    calculateProgress,
+    daysRemaining,
+  }), [
+    language, currentLanguage, changeLanguage, t,
+    user, isAuthenticated, login, logout, updateUser,
+    donationState, updateDonation, resetDonation, nextDonationStep, prevDonationStep,
+    toast, showToast, hideToast,
+    isDarkMode, toggleDarkMode, setDarkMode,
+    formatCurrency, formatDate, formatPhoneNumber, formatRelativeTime, calculateProgress, daysRemaining,
+  ]);
+
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// ============================================
+// CUSTOM HOOK
+// ============================================
 
 export const useApp = () => {
   const context = useContext(AppContext);
@@ -11,333 +506,4 @@ export const useApp = () => {
   return context;
 };
 
-export const AppProvider = ({ children }) => {
-  // User state
-  const [user, setUser] = useState(initialUser);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  // Data state
-  const [projects, setProjects] = useState(initialProjects);
-  const [donations, setDonations] = useState(initialDonations);
-  const [donors, setDonors] = useState(initialDonors);
-
-  // Donation flow state
-  const [currentDonation, setCurrentDonation] = useState(null);
-
-  // Language state - Arabic is default
-  const [language, setLanguage] = useState('ar');
-
-  // Auth functions
-  const login = useCallback((userData) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-  }, []);
-
-  const loginAsAdmin = useCallback((adminData) => {
-    setUser(adminData);
-    setIsAuthenticated(true);
-    setIsAdmin(true);
-  }, []);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    setIsAuthenticated(false);
-    setIsAdmin(false);
-  }, []);
-
-  // Project functions
-  const getProjectById = useCallback((id) => {
-    return projects.find(p => p.id === parseInt(id));
-  }, [projects]);
-
-  const getProjectsByStatus = useCallback((status) => {
-    if (status === 'all') return projects;
-    return projects.filter(p => p.status === status);
-  }, [projects]);
-
-  const addProject = useCallback((project) => {
-    setProjects(prev => [...prev, { ...project, id: Date.now() }]);
-  }, []);
-
-  const updateProject = useCallback((id, updates) => {
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-  }, []);
-
-  const deleteProject = useCallback((id) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-  }, []);
-
-  // Donation functions
-  const addDonation = useCallback((donation) => {
-    const newDonation = {
-      ...donation,
-      id: Date.now(),
-      date: new Date().toISOString(),
-    };
-    setDonations(prev => [newDonation, ...prev]);
-    
-    // Update project raised amount
-    if (donation.status === 'verified') {
-      setProjects(prev => prev.map(p => {
-        if (p.id === donation.projectId) {
-          const newRaised = p.raisedAmount + donation.amount;
-          const newStatus = newRaised >= p.goalAmount ? 'funded' : p.status;
-          return { 
-            ...p, 
-            raisedAmount: newRaised,
-            status: newStatus,
-            donorsCount: p.donorsCount + 1
-          };
-        }
-        return p;
-      }));
-    }
-    
-    return newDonation;
-  }, []);
-
-  const verifyDonation = useCallback((donationId) => {
-    setDonations(prev => prev.map(d => {
-      if (d.id === donationId) {
-        const updated = { ...d, status: 'verified' };
-        // Update project amount
-        setProjects(projects => projects.map(p => {
-          if (p.id === d.projectId) {
-            const newRaised = p.raisedAmount + d.amount;
-            const newStatus = newRaised >= p.goalAmount ? 'funded' : p.status;
-            return { 
-              ...p, 
-              raisedAmount: newRaised,
-              status: newStatus,
-            };
-          }
-          return p;
-        }));
-        return updated;
-      }
-      return d;
-    }));
-  }, []);
-
-  const rejectDonation = useCallback((donationId, reason) => {
-    setDonations(prev => prev.map(d => 
-      d.id === donationId ? { ...d, status: 'failed', failureReason: reason } : d
-    ));
-  }, []);
-
-  const getDonationsByProject = useCallback((projectId) => {
-    return donations.filter(d => d.projectId === parseInt(projectId));
-  }, [donations]);
-
-  const getUserDonations = useCallback(() => {
-    if (!user) return [];
-    return donations.filter(d => d.donorId === user.id);
-  }, [donations, user]);
-
-  const getPendingDonations = useCallback(() => {
-    return donations.filter(d => d.status === 'pending');
-  }, [donations]);
-
-  // Donor functions
-  const getDonorById = useCallback((id) => {
-    return donors.find(d => d.id === parseInt(id));
-  }, [donors]);
-
-  const getDonationsByDonor = useCallback((donorId) => {
-    return donations.filter(d => d.donorId === parseInt(donorId));
-  }, [donations]);
-
-  // Donation flow
-  const startDonation = useCallback((projectId) => {
-    setCurrentDonation({
-      projectId,
-      amount: null,
-      isAnonymous: false,
-      donorInfo: null,
-      method: null,
-      status: 'draft',
-    });
-  }, []);
-
-  const updateDonation = useCallback((updates) => {
-    setCurrentDonation(prev => ({ ...prev, ...updates }));
-  }, []);
-
-  const completeDonation = useCallback(() => {
-    if (currentDonation) {
-      addDonation({
-        projectId: currentDonation.projectId,
-        donorId: user?.id || null,
-        donorName: currentDonation.isAnonymous ? 'Anonyme' : (currentDonation.donorInfo?.name || user?.name),
-        amount: currentDonation.amount,
-        method: currentDonation.method,
-        status: currentDonation.method === 'card' ? 'verified' : 'pending',
-        reference: currentDonation.method === 'transfer' ? `DON-${Date.now().toString().slice(-4)}` : null,
-        isAnonymous: currentDonation.isAnonymous,
-      });
-      setCurrentDonation(null);
-    }
-  }, [currentDonation, user, addDonation]);
-
-  const resetDonation = useCallback(() => {
-    setCurrentDonation(null);
-  }, []);
-
-  // Utility functions
-  const formatCurrency = useCallback((amount) => {
-    return new Intl.NumberFormat('fr-MA', {
-      style: 'currency',
-      currency: 'MAD',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  }, []);
-
-  const formatDate = useCallback((dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-MA', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  }, []);
-
-  const formatRelativeTime = useCallback((dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    
-    const labels = {
-      ar: {
-        justNow: 'الآن',
-        hoursAgo: (h) => `منذ ${h} ساعة`,
-        yesterday: 'أمس',
-        daysAgo: (d) => `منذ ${d} يوم`,
-      },
-      fr: {
-        justNow: "À l'instant",
-        hoursAgo: (h) => `Il y a ${h}h`,
-        yesterday: 'Hier',
-        daysAgo: (d) => `Il y a ${d} jours`,
-      },
-      en: {
-        justNow: 'Just now',
-        hoursAgo: (h) => `${h}h ago`,
-        yesterday: 'Yesterday',
-        daysAgo: (d) => `${d} days ago`,
-      },
-    };
-    
-    const t = labels[language] || labels.ar;
-    
-    if (diffInHours < 1) return t.justNow;
-    if (diffInHours < 24) return t.hoursAgo(diffInHours);
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return t.yesterday;
-    if (diffInDays < 30) return t.daysAgo(diffInDays);
-    return formatDate(dateString);
-  }, [formatDate, language]);
-
-  const getStatusLabel = useCallback((status) => {
-    const labels = {
-      ar: {
-        active: 'جاري',
-        funded: 'تم التمويل',
-        finished: 'منتهي',
-        stopped: 'متوقف',
-        expired: 'منتهي الصلاحية',
-        pending: 'معلق',
-        verified: 'تم التحقق',
-        failed: 'فاشل',
-      },
-      fr: {
-        active: 'En cours',
-        funded: 'Financé',
-        finished: 'Terminé',
-        stopped: 'Arrêté',
-        expired: 'Expiré',
-        pending: 'En attente',
-        verified: 'Vérifié',
-        failed: 'Échoué',
-      },
-      en: {
-        active: 'Active',
-        funded: 'Funded',
-        finished: 'Finished',
-        stopped: 'Stopped',
-        expired: 'Expired',
-        pending: 'Pending',
-        verified: 'Verified',
-        failed: 'Failed',
-      },
-    };
-    return (labels[language] || labels.ar)[status] || status;
-  }, [language]);
-
-  const getStatusColor = useCallback((status) => {
-    const colors = {
-      active: 'bg-green-100 text-green-800',
-      funded: 'bg-yellow-100 text-yellow-800',
-      finished: 'bg-blue-100 text-blue-800',
-      stopped: 'bg-orange-100 text-orange-800',
-      expired: 'bg-red-100 text-red-800',
-      pending: 'bg-orange-100 text-orange-700',
-      verified: 'bg-green-100 text-green-700',
-      failed: 'bg-red-100 text-red-700',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  }, []);
-
-  const value = {
-    // State
-    user,
-    isAuthenticated,
-    isAdmin,
-    projects,
-    donations,
-    donors,
-    currentDonation,
-    associationInfo,
-    stats,
-    language,
-    setLanguage,
-    
-    // Auth
-    login,
-    loginAsAdmin,
-    logout,
-    
-    // Projects
-    getProjectById,
-    getProjectsByStatus,
-    addProject,
-    updateProject,
-    deleteProject,
-    
-    // Donations
-    addDonation,
-    verifyDonation,
-    rejectDonation,
-    getDonationsByProject,
-    getUserDonations,
-    getPendingDonations,
-    
-    // Donors
-    getDonorById,
-    getDonationsByDonor,
-    
-    // Donation flow
-    startDonation,
-    updateDonation,
-    completeDonation,
-    resetDonation,
-    
-    // Utils
-    formatCurrency,
-    formatDate,
-    formatRelativeTime,
-    getStatusLabel,
-    getStatusColor,
-  };
-
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-};
+export default AppContext;

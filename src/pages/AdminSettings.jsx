@@ -1,331 +1,368 @@
 import React, { useState } from 'react';
-import { Upload, Bell, Users, CreditCard, Save, Copy, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import Card from '../components/Card';
+import Button from '../components/Button';
+
+// ============================================
+// ADMIN SETTINGS PAGE - System Configuration
+// ============================================
 
 const AdminSettings = () => {
-  const { associationInfo, language } = useApp();
-  const [copied, setCopied] = useState(null);
-  const [settings, setSettings] = useState({
-    name: associationInfo.name,
-    arabicName: associationInfo.arabicName,
-    description: associationInfo.description,
-    email: associationInfo.email,
-    phone: associationInfo.phone,
-    whatsapp: associationInfo.whatsapp,
-    address: associationInfo.address,
-    bankName: associationInfo.bankName,
-    accountHolder: associationInfo.accountHolder,
-    rib: associationInfo.rib,
-    notifications: {
-      newDonation: true,
-      pendingVerification: true,
-      projectFunded: true,
-      newDonor: true,
-    },
-  });
+  const { currentLanguage, isDarkMode, toggleDarkMode } = useApp();
+  const [activeTab, setActiveTab] = useState('bank');
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
-      title: 'الإعدادات',
-      association: 'الجمعية',
-      associationName: 'اسم الجمعية',
-      arabicName: 'الاسم بالعربية',
-      description: 'الوصف',
-      contactEmail: 'البريد الإلكتروني للتواصل',
-      phone: 'الهاتف',
-      address: 'العنوان',
-      bankInfo: 'المعلومات البنكية',
-      bankInfoDesc: 'ستظهر هذه المعلومات للمتبرعين للتحويلات البنكية',
-      bank: 'البنك',
-      accountHolder: 'صاحب الحساب',
+      title: 'إعدادات النظام',
+      bankManagement: 'إدارة البنك',
+      bankDescription: 'تكوين تفاصيل RIB الآمنة لمعالجة التبرعات.',
+      accountHolder: 'اسم صاحب الحساب',
       rib: 'RIB',
-      whatsappNotifications: 'إشعارات واتساب',
-      teamNumber: 'رقم واتساب الفريق',
-      notificationsToReceive: 'الإشعارات المراد استلامها',
-      newDonation: 'تبرع جديد مستلم',
-      pendingVerification: 'تبرع بانتظار التحقق',
-      projectFunded: 'مشروع ممول 100%',
-      newDonor: 'متبرع جديد مسجل',
-      team: 'الفريق',
-      mainAdmin: 'المشرف الرئيسي',
-      active: 'نشط',
-      inviteAdmin: '+ دعوة مشرف جديد',
+      ribHint: 'رقم الحساب البنكي المغربي القياسي المكون من 24 رقماً',
+      bankName: 'اسم البنك',
+      securityNote: 'تتطلب التغييرات المصادقة متعددة العوامل. سيتم إرسال تنبيهات الإشعارات إلى دائرة المشرفين.',
       saveChanges: 'حفظ التغييرات',
-      saved: 'تم الحفظ!',
+      settingsNav: 'التنقل في الإعدادات',
+      associationProfile: 'ملف الجمعية',
+      adminAccess: 'وصول المشرف',
+      notificationRules: 'قواعد الإشعارات',
+      paymentMethods: 'طرق الدفع',
+      generalSettings: 'إعدادات عامة',
+      darkMode: 'الوضع الداكن',
+      language: 'اللغة',
+      notifications: 'الإشعارات',
+      emailNotifications: 'إشعارات البريد الإلكتروني',
+      smsNotifications: 'إشعارات الرسائل القصيرة',
     },
     fr: {
-      title: 'Paramètres',
-      association: 'Association',
-      associationName: "Nom de l'association",
-      arabicName: 'Nom en arabe',
-      description: 'Description',
-      contactEmail: 'Email de contact',
-      phone: 'Téléphone',
-      address: 'Adresse',
-      bankInfo: 'Informations bancaires',
-      bankInfoDesc: 'Ces informations seront affichées aux donateurs pour les virements',
-      bank: 'Banque',
-      accountHolder: 'Titulaire du compte',
+      title: 'Paramètres Système',
+      bankManagement: 'Gestion Bancaire',
+      bankDescription: 'Configurer les détails RIB sécurisés pour le traitement des dons.',
+      accountHolder: 'Nom du Titulaire',
       rib: 'RIB',
-      whatsappNotifications: 'Notifications WhatsApp',
-      teamNumber: 'Numéro WhatsApp de\'équipe',
-      notificationsToReceive: 'Notifications à recevoir',
-      newDonation: 'Nouveau don reçu',
-      pendingVerification: 'Don en attente de vérification',
-      projectFunded: 'Projet financé à 100%',
-      newDonor: 'Nouveau donateur inscrit',
-      team: 'Équipe',
-      mainAdmin: 'Admin principal',
-      active: 'Actif',
-      inviteAdmin: '+ Inviter un nouvel admin',
-      saveChanges: 'Enregistrer les modifications',
-      saved: 'Enregistré!',
+      ribHint: 'Relevé d\'Identité Bancaire marocain standard de 24 chiffres',
+      bankName: 'Nom de la Banque',
+      securityNote: 'Les modifications nécessitent une authentification multi-facteurs. Les alertes seront envoyées au cercle des administrateurs.',
+      saveChanges: 'Enregistrer les Modifications',
+      settingsNav: 'Navigation des Paramètres',
+      associationProfile: 'Profil de l\'Association',
+      adminAccess: 'Accès Admin',
+      notificationRules: 'Règles de Notification',
+      paymentMethods: 'Méthodes de Paiement',
+      generalSettings: 'Paramètres Généraux',
+      darkMode: 'Mode Sombre',
+      language: 'Langue',
+      notifications: 'Notifications',
+      emailNotifications: 'Notifications Email',
+      smsNotifications: 'Notifications SMS',
     },
     en: {
-      title: 'Settings',
-      association: 'Association',
-      associationName: 'Association Name',
-      arabicName: 'Arabic Name',
-      description: 'Description',
-      contactEmail: 'Contact Email',
-      phone: 'Phone',
-      address: 'Address',
-      bankInfo: 'Bank Information',
-      bankInfoDesc: 'This information will be displayed to donors for bank transfers',
-      bank: 'Bank',
-      accountHolder: 'Account Holder',
+      title: 'System Settings',
+      bankManagement: 'Bank Management',
+      bankDescription: 'Configure the secure RIB details for donation processing.',
+      accountHolder: 'Account Holder Name',
       rib: 'RIB',
-      whatsappNotifications: 'WhatsApp Notifications',
-      teamNumber: 'Team WhatsApp Number',
-      notificationsToReceive: 'Notifications to receive',
-      newDonation: 'New donation received',
-      pendingVerification: 'Donation pending verification',
-      projectFunded: 'Project 100% funded',
-      newDonor: 'New donor registered',
-      team: 'Team',
-      mainAdmin: 'Main Admin',
-      active: 'Active',
-      inviteAdmin: '+ Invite new admin',
+      ribHint: 'Standard 24-digit Moroccan Relevé d\'Identité Bancaire',
+      bankName: 'Bank Name',
+      securityNote: 'Changes require MFA. Notification alerts will be sent to the admin circle.',
       saveChanges: 'Save Changes',
-      saved: 'Saved!',
+      settingsNav: 'Settings Navigation',
+      associationProfile: 'Association Profile',
+      adminAccess: 'Admin Access',
+      notificationRules: 'Notification Rules',
+      paymentMethods: 'Payment Methods',
+      generalSettings: 'General Settings',
+      darkMode: 'Dark Mode',
+      language: 'Language',
+      notifications: 'Notifications',
+      emailNotifications: 'Email Notifications',
+      smsNotifications: 'SMS Notifications',
     },
-  }[language] || {};
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setSettings(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCopy = (text, field) => {
-    navigator.clipboard.writeText(text);
-    setCopied(field);
-    setTimeout(() => setCopied(null), 2000);
+  const t = translations[currentLanguage.code] || translations.en;
+
+  // Form state
+  const [formData, setFormData] = useState({
+    accountHolder: 'Association Espoir',
+    rib: '181 330 2111122223333444 55',
+    bankName: 'Attijariwafa Bank',
+    emailNotifications: true,
+    smsNotifications: false,
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = () => {
-    alert(t.saved);
+    // Save logic here
+    alert('Settings saved successfully!');
   };
 
-  const isRTL = language === 'ar';
-
-  const notificationItems = [
-    { key: 'newDonation', label: t.newDonation },
-    { key: 'pendingVerification', label: t.pendingVerification },
-    { key: 'projectFunded', label: t.projectFunded },
-    { key: 'newDonor', label: t.newDonor },
+  const settingsTabs = [
+    { id: 'bank', icon: 'account_balance', label: t.bankManagement },
+    { id: 'profile', icon: 'corporate_fare', label: t.associationProfile },
+    { id: 'access', icon: 'admin_panel_settings', label: t.adminAccess },
+    { id: 'notifications', icon: 'notifications_active', label: t.notificationRules },
   ];
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t.title}</h1>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
+      </div>
 
-      <div className="space-y-6">
-        {/* Association Info */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mr-2">
-              <span className="text-primary-600 text-sm">A</span>
-            </span>
-            {t.association}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.associationName}</label>
-              <input
-                type="text"
-                name="name"
-                value={settings.name}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.arabicName}</label>
-              <input
-                type="text"
-                name="arabicName"
-                value={settings.arabicName}
-                onChange={handleChange}
-                className="input-field text-right"
-                dir="rtl"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.description}</label>
-              <textarea
-                name="description"
-                value={settings.description}
-                onChange={handleChange}
-                rows={3}
-                className="input-field resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.contactEmail}</label>
-              <input
-                type="email"
-                name="email"
-                value={settings.email}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.phone}</label>
-              <input
-                type="tel"
-                name="phone"
-                value={settings.phone}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.address}</label>
-              <input
-                type="text"
-                name="address"
-                value={settings.address}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Bank Info */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <CreditCard className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t.bankInfo}
-          </h2>
-          <p className="text-sm text-gray-500 mb-4">{t.bankInfoDesc}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.bank}</label>
-              <input
-                type="text"
-                name="bankName"
-                value={settings.bankName}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.accountHolder}</label>
-              <input
-                type="text"
-                name="accountHolder"
-                value={settings.accountHolder}
-                onChange={handleChange}
-                className="input-field"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.rib}</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="rib"
-                  value={settings.rib}
-                  onChange={handleChange}
-                  className={`input-field font-mono ${isRTL ? 'pl-12' : 'pr-12'}`}
-                />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Sidebar - Navigation */}
+        <div className="lg:col-span-1">
+          <Card padding="none" className="overflow-hidden">
+            <nav className="flex flex-col">
+              {settingsTabs.map((tab) => (
                 <button
-                  onClick={() => handleCopy(settings.rib, 'rib')}
-                  className={`absolute top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded ${isRTL ? 'left-3' : 'right-3'}`}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-4 px-6 py-5 transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  } ${tab.id !== 'bank' ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
                 >
-                  {copied === 'rib' ? <CheckCircle className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-gray-400" />}
+                  <div className={`p-2 rounded-lg ${activeTab === tab.id ? 'bg-primary/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                    <span className={`material-symbols-outlined text-[22px] ${activeTab === tab.id ? 'text-primary' : 'text-slate-500'}`}>
+                      {tab.icon}
+                    </span>
+                  </div>
+                  <span className="flex-1 font-semibold text-[15px] text-left">{tab.label}</span>
+                  <span className={`material-symbols-outlined text-[20px] ${activeTab === tab.id ? 'text-primary' : 'text-slate-300'}`}>
+                    chevron_right
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </Card>
+
+          {/* Quick Settings */}
+          <Card padding="lg" className="mt-4">
+            <h3 className="font-semibold text-text-primary dark:text-white mb-4">{t.generalSettings}</h3>
+            <div className="space-y-4">
+              {/* Dark Mode Toggle */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t.darkMode}</span>
+                <button
+                  onClick={toggleDarkMode}
+                  className={`w-11 h-6 rounded-full relative transition-colors ${
+                    isDarkMode ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                    isDarkMode ? 'right-0.5' : 'left-0.5'
+                  }`} />
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* WhatsApp Notifications */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Bell className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t.whatsappNotifications}
-          </h2>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t.teamNumber}</label>
-            <input
-              type="tel"
-              name="whatsapp"
-              value={settings.whatsapp}
-              onChange={handleChange}
-              className="input-field"
-            />
-          </div>
-          <p className="text-sm font-medium text-gray-700 mb-3">{t.notificationsToReceive}:</p>
-          <div className="space-y-3">
-            {notificationItems.map((item) => (
-              <label key={item.key} className={`flex items-center gap-3 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications[item.key]}
-                  onChange={(e) => setSettings(prev => ({
-                    ...prev,
-                    notifications: { ...prev.notifications, [item.key]: e.target.checked }
-                  }))}
-                  className="w-5 h-5 text-primary-600 rounded"
-                />
-                <span className="text-gray-700">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Team */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Users className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t.team}
-          </h2>
-          <div className={`flex items-center justify-between p-4 bg-gray-50 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                <span className="text-primary-600 font-medium">A</span>
-              </div>
-              <div className={isRTL ? 'text-right' : ''}>
-                <p className="font-medium">{associationInfo.name}</p>
-                <p className="text-sm text-gray-500">{t.mainAdmin}</p>
+              
+              {/* Language Selector */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t.language}</span>
+                <select 
+                  className="text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-text-primary dark:text-white"
+                >
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                  <option value="ar">العربية</option>
+                </select>
               </div>
             </div>
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full">{t.active}</span>
-          </div>
-          <button className="mt-4 text-primary-600 text-sm hover:underline">
-            {t.inviteAdmin}
-          </button>
+          </Card>
         </div>
 
-        {/* Save Button */}
-        <div className={`flex justify-end ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button onClick={handleSave} className="btn-primary flex items-center">
-            <Save className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t.saveChanges}
-          </button>
+        {/* Right Content */}
+        <div className="lg:col-span-2">
+          {activeTab === 'bank' && (
+            <Card padding="lg">
+              <div className="flex flex-col gap-1 mb-6">
+                <h3 className="text-text-primary dark:text-white text-2xl font-bold font-serif">{t.bankManagement}</h3>
+                <p className="text-slate-500 text-sm font-medium">{t.bankDescription}</p>
+              </div>
+
+              <div className="space-y-5">
+                {/* Account Holder */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">
+                    {t.accountHolder}
+                  </span>
+                  <input
+                    type="text"
+                    value={formData.accountHolder}
+                    onChange={(e) => handleInputChange('accountHolder', e.target.value)}
+                    className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-text-primary dark:text-white shadow-sm"
+                    placeholder="Association Espoir"
+                  />
+                </label>
+
+                {/* RIB */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">
+                    {t.rib}
+                  </span>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.rib}
+                      onChange={(e) => handleInputChange('rib', e.target.value)}
+                      className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 font-mono text-text-primary dark:text-white shadow-sm pr-12"
+                      placeholder="000 000 0000000000000000 00"
+                    />
+                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/40 text-xl">lock</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1 ml-1">{t.ribHint}</p>
+                </label>
+
+                {/* Bank Name */}
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider ml-1">
+                    {t.bankName}
+                  </span>
+                  <input
+                    type="text"
+                    value={formData.bankName}
+                    onChange={(e) => handleInputChange('bankName', e.target.value)}
+                    className="w-full rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-slate-300 text-text-primary dark:text-white shadow-sm"
+                    placeholder="Bank Name"
+                  />
+                </label>
+
+                {/* Security Note */}
+                <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl p-4 flex gap-4 items-center shadow-sm">
+                  <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-xl shrink-0">
+                    <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+                  </div>
+                  <p className="text-[13px] text-slate-600 dark:text-slate-300 leading-tight font-medium">
+                    {t.securityNote}
+                  </p>
+                </div>
+
+                {/* Save Button */}
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  onClick={handleSave}
+                  className="shadow-lg shadow-primary/20 mt-2"
+                >
+                  {t.saveChanges}
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {activeTab === 'profile' && (
+            <Card padding="lg">
+              <h3 className="text-text-primary dark:text-white text-xl font-bold mb-6">{t.associationProfile}</h3>
+              <div className="space-y-4">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Organization Name</span>
+                  <input
+                    type="text"
+                    defaultValue="Association Espoir"
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Email</span>
+                  <input
+                    type="email"
+                    defaultValue="contact@espoir.org"
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Phone</span>
+                  <input
+                    type="tel"
+                    defaultValue="+212 5XX-XXXXXX"
+                    className="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-base text-text-primary dark:text-white"
+                  />
+                </label>
+                <Button variant="primary" size="lg" fullWidth onClick={handleSave}>
+                  {t.saveChanges}
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {activeTab === 'access' && (
+            <Card padding="lg">
+              <h3 className="text-text-primary dark:text-white text-xl font-bold mb-6">{t.adminAccess}</h3>
+              <div className="space-y-4">
+                {['Admin User', 'Manager User', 'Viewer User'].map((user, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary">person</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-text-primary dark:text-white">{user}</p>
+                        <p className="text-sm text-slate-500">admin{index + 1}@espoir.org</p>
+                      </div>
+                    </div>
+                    <Badge variant={index === 0 ? 'success' : 'neutral'} size="sm">
+                      {index === 0 ? 'Super Admin' : index === 1 ? 'Manager' : 'Viewer'}
+                    </Badge>
+                  </div>
+                ))}
+                <Button variant="outline" size="lg" fullWidth icon="add">
+                  Add New Admin
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {activeTab === 'notifications' && (
+            <Card padding="lg">
+              <h3 className="text-text-primary dark:text-white text-xl font-bold mb-6">{t.notificationRules}</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-slate-500">email</span>
+                    <span className="text-text-primary dark:text-white">{t.emailNotifications}</span>
+                  </div>
+                  <button
+                    onClick={() => handleInputChange('emailNotifications', !formData.emailNotifications)}
+                    className={`w-11 h-6 rounded-full relative transition-colors ${
+                      formData.emailNotifications ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                    }`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                      formData.emailNotifications ? 'right-0.5' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-slate-500">sms</span>
+                    <span className="text-text-primary dark:text-white">{t.smsNotifications}</span>
+                  </div>
+                  <button
+                    onClick={() => handleInputChange('smsNotifications', !formData.smsNotifications)}
+                    className={`w-11 h-6 rounded-full relative transition-colors ${
+                      formData.smsNotifications ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                    }`}
+                  >
+                    <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
+                      formData.smsNotifications ? 'right-0.5' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+                <Button variant="primary" size="lg" fullWidth onClick={handleSave}>
+                  {t.saveChanges}
+                </Button>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>

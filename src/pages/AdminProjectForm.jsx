@@ -1,475 +1,368 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Eye, Upload, Bold, Italic, List, Image as ImageIcon } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import Card from '../components/Card';
+import Button from '../components/Button';
+
+// ============================================
+// ADMIN PROJECT FORM PAGE - Create/Edit Projects
+// ============================================
 
 const AdminProjectForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getProjectById, addProject, updateProject, language } = useApp();
-  const isEdit = Boolean(id);
-  const existingProject = isEdit ? getProjectById(id) : null;
+  const { currentLanguage } = useApp();
+  const isEditMode = Boolean(id);
+  const [activeTab, setActiveTab] = useState('en');
+  const [progress, setProgress] = useState(65);
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
+      createTitle: 'إنشاء مشروع جديد',
       editTitle: 'تعديل المشروع',
-      newTitle: 'مشروع جديد',
-      back: 'رجوع',
-      preview: 'معاينة',
-      edit: 'تعديل',
-      save: 'حفظ',
-      publish: 'نشر',
-      notFound: 'المشروع غير موجود',
-      backToProjects: 'العودة للمشاريع',
-      mainInfo: 'المعلومات الرئيسية',
+      basicInfo: 'المعلومات الأساسية',
+      financialSettings: 'الإعدادات المالية',
+      mediaGallery: 'معرض الوسائط',
+      location: 'الموقع',
       projectTitle: 'عنوان المشروع',
-      required: 'مطلوب',
-      category: 'التصنيف',
-      goalAmount: 'هدف التبرعات (درهم)',
-      shortDesc: 'وصف مختصر (حد أقصى 150 حرف)',
-      charCount: 'حرف',
-      dates: 'التواريخ',
-      startDate: 'تاريخ البدء',
-      endDate: 'تاريخ الانتهاء',
-      endDateHelp: 'سيتم تحويل المشروع تلقائياً إلى منتهي الصلاحية بعد هذا التاريخ',
-      mainImage: 'الصورة الرئيسية',
-      clickOrDrag: 'انقر أو اسحب صورة هنا',
-      imageHint: 'JPG, PNG موصى به - 1200x800px',
-      imageUrl: 'رابط الصورة',
-      fullDescription: 'الوصف الكامل',
-      bold: 'عريض',
-      italic: 'مائل',
-      list: 'قائمة',
-      image: 'صورة',
-      placeholder: 'صف المشروع بالتفصيل...',
-      settings: 'الإعدادات',
-      status: 'الحالة',
-      active: 'نشط',
-      stopped: 'متوقف',
-      statusHelp: 'سيتم التحويل تلقائياً إلى ممول عند الوصول للهدف. يمكن تحديد منتهي يدوياً.',
-      featured: 'تثبيت في الصفحة الرئيسية',
-      cancel: 'إلغاء',
+      shortDescription: 'وصف قصير',
+      goalAmount: 'المبلغ المستهدف',
+      currency: 'العملة',
+      visibility: 'الرؤية',
+      public: 'عام',
+      private: 'خاص',
       saveDraft: 'حفظ كمسودة',
-      saveChanges: 'حفظ التغييرات',
-      publishProject: 'نشر المشروع',
-      categories: ['تعليم', 'صحة', 'أيتام', 'مجتمع', 'طوارئ', 'مساعدات غذائية', 'تدريب', 'بنية تحتية', 'أخرى'],
+      publish: 'نشر المشروع',
+      preview: 'معاينة',
+      help: 'مساعدة',
+      completionProgress: 'تقدم الإكمال',
+      maxFiles: 'الحد الأقصى 10 ملفات. الصيغ المدعومة: JPG, PNG, MP4. يوصى بصور عالية الدقة.',
+      add: 'إضافة',
+      editMap: 'تحرير الخريطة',
     },
     fr: {
-      editTitle: 'Modifier le projet',
-      newTitle: 'Nouveau projet',
-      back: 'Retour',
+      createTitle: 'Créer un Nouveau Projet',
+      editTitle: 'Modifier le Projet',
+      basicInfo: 'Informations de Base',
+      financialSettings: 'Paramètres Financiers',
+      mediaGallery: 'Galerie Média',
+      location: 'Localisation',
+      projectTitle: 'Titre du Projet',
+      shortDescription: 'Description Courte',
+      goalAmount: 'Montant Objectif',
+      currency: 'Devise',
+      visibility: 'Visibilité',
+      public: 'Public',
+      private: 'Privé',
+      saveDraft: 'Enregistrer Brouillon',
+      publish: 'Publier le Projet',
       preview: 'Aperçu',
-      edit: 'Éditer',
-      save: 'Enregistrer',
-      publish: 'Publier',
-      notFound: 'Projet non trouvé',
-      backToProjects: 'Retour aux projets',
-      mainInfo: 'Informations principales',
-      projectTitle: 'Titre du projet',
-      required: 'Requis',
-      category: 'Catégorie',
-      goalAmount: 'Objectif de collecte (DH)',
-      shortDesc: 'Description courte (max 150 caractères)',
-      charCount: 'caractères',
-      dates: 'Dates',
-      startDate: 'Date de début',
-      endDate: 'Date de fin',
-      endDateHelp: 'Le projet passera automatiquement en \'Expiré\' après cette date',
-      mainImage: 'Image principale',
-      clickOrDrag: 'Cliquez ou glissez une image ici',
-      imageHint: 'JPG, PNG recommandé - 1200x800px',
-      imageUrl: 'URL de l\'image',
-      fullDescription: 'Description complète',
-      bold: 'Gras',
-      italic: 'Italique',
-      list: 'Liste',
-      image: 'Image',
-      placeholder: 'Décrivez le projet en détail...',
-      settings: 'Paramètres',
-      status: 'Statut',
-      active: 'Actif',
-      stopped: 'Arrêté',
-      statusHelp: '\'Financé\' sera automatique quand l\'objectif est atteint. \'Terminé\' est à définir manuellement.',
-      featured: 'Mettre en avant sur la page d\'accueil',
-      cancel: 'Annuler',
-      saveDraft: 'Enregistrer comme brouillon',
-      saveChanges: 'Enregistrer les modifications',
-      publishProject: 'Publier le projet',
-      categories: ['Éducation', 'Santé', 'Orphelins', 'Communauté', 'Urgence', 'Aide alimentaire', 'Formation', 'Infrastructure', 'Autre'],
+      help: 'Aide',
+      completionProgress: 'Progression',
+      maxFiles: 'Maximum 10 fichiers. Formats supportés: JPG, PNG, MP4. Images haute résolution recommandées.',
+      add: 'Ajouter',
+      editMap: 'Modifier la Carte',
     },
     en: {
+      createTitle: 'Create New Project',
       editTitle: 'Edit Project',
-      newTitle: 'New Project',
-      back: 'Back',
-      preview: 'Preview',
-      edit: 'Edit',
-      save: 'Save',
-      publish: 'Publish',
-      notFound: 'Project not found',
-      backToProjects: 'Back to Projects',
-      mainInfo: 'Main Information',
+      basicInfo: 'Basic Information',
+      financialSettings: 'Financial Settings',
+      mediaGallery: 'Media Gallery',
+      location: 'Location',
       projectTitle: 'Project Title',
-      required: 'Required',
-      category: 'Category',
-      goalAmount: 'Goal Amount (DH)',
-      shortDesc: 'Short Description (max 150 chars)',
-      charCount: 'characters',
-      dates: 'Dates',
-      startDate: 'Start Date',
-      endDate: 'End Date',
-      endDateHelp: 'Project will automatically become \'Expired\' after this date',
-      mainImage: 'Main Image',
-      clickOrDrag: 'Click or drag an image here',
-      imageHint: 'JPG, PNG recommended - 1200x800px',
-      imageUrl: 'Image URL',
-      fullDescription: 'Full Description',
-      bold: 'Bold',
-      italic: 'Italic',
-      list: 'List',
-      image: 'Image',
-      placeholder: 'Describe the project in detail...',
-      settings: 'Settings',
-      status: 'Status',
-      active: 'Active',
-      stopped: 'Stopped',
-      statusHelp: '\'Funded\' will be automatic when goal is reached. \'Finished\' is set manually.',
-      featured: 'Feature on homepage',
-      cancel: 'Cancel',
-      saveDraft: 'Save as Draft',
-      saveChanges: 'Save Changes',
-      publishProject: 'Publish Project',
-      categories: ['Education', 'Health', 'Orphans', 'Community', 'Emergency', 'Food Aid', 'Training', 'Infrastructure', 'Other'],
+      shortDescription: 'Short Description',
+      goalAmount: 'Goal Amount',
+      currency: 'Currency',
+      visibility: 'Visibility',
+      public: 'Public',
+      private: 'Private',
+      saveDraft: 'Save Draft',
+      publish: 'Publish Project',
+      preview: 'Preview',
+      help: 'Help',
+      completionProgress: 'Completion Progress',
+      maxFiles: 'Maximum 10 files. Supported formats: JPG, PNG, MP4. High resolution images recommended.',
+      add: 'Add',
+      editMap: 'Edit Map',
     },
-  }[language] || {};
+  };
 
+  const t = translations[currentLanguage.code] || translations.en;
+
+  // Form state
   const [formData, setFormData] = useState({
-    title: '',
-    category: t.categories?.[0] || 'Éducation',
-    shortDescription: '',
-    description: '',
-    goalAmount: '',
-    startDate: '',
-    endDate: '',
-    status: 'active',
-    featured: false,
-    mainImage: '',
+    title: {
+      en: 'Community Water Access Initiative',
+      fr: 'Initiative d\'Accès à l\'Eau Communautaire',
+      ar: 'مبادرة الوصول إلى المياه المجتمعية',
+    },
+    description: {
+      en: 'Providing sustainable clean water solutions for rural communities in the Atlas Mountains region.',
+      fr: 'Fournir des solutions d\'eau potable durables pour les communautés rurales de la région de l\'Atlas.',
+      ar: 'توفير حلول مياه نظيفة مستدامة للمجتمعات الريفية في منطقة جبال الأطلس.',
+    },
+    goal: 25000,
+    currency: 'USD',
+    visibility: 'public',
+    mainImage: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
+    gallery: [
+      'https://images.unsplash.com/photo-1541544537156-21c5299228d8?w=400',
+      'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400',
+    ],
+    location: 'Atlas Mountains Region, Province d\'Al Haouz, Morocco',
   });
-  const [isPreview, setIsPreview] = useState(false);
 
-  useEffect(() => {
-    if (existingProject) {
-      setFormData({
-        title: existingProject.title,
-        category: existingProject.category,
-        shortDescription: existingProject.shortDescription,
-        description: existingProject.description,
-        goalAmount: existingProject.goalAmount,
-        startDate: existingProject.createdAt || '',
-        endDate: existingProject.endDate || '',
-        status: existingProject.status,
-        featured: existingProject.featured,
-        mainImage: existingProject.mainImage,
-      });
+  const handleInputChange = (field, value, lang = null) => {
+    if (lang) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: { ...prev[field], [lang]: value },
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
-  }, [existingProject]);
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const projectData = {
-      ...formData,
-      goalAmount: parseInt(formData.goalAmount),
-      raisedAmount: existingProject?.raisedAmount || 0,
-      donorsCount: existingProject?.donorsCount || 0,
-      updates: existingProject?.updates || [],
-    };
-
-    if (isEdit) {
-      updateProject(parseInt(id), projectData);
-      navigate(`/admin/projets/${id}`);
-    } else {
-      addProject(projectData);
-      navigate('/admin/projets');
-    }
+    // Save logic here
+    navigate('/admin/projects');
   };
 
-  const isRTL = language === 'ar';
-
-  if (isEdit && !existingProject) {
-    return (
-      <div className="text-center py-12" dir={isRTL ? 'rtl' : 'ltr'}>
-        <p className="text-gray-500">{t.notFound}</p>
-        <Link to="/admin/projets" className="btn-primary mt-4 inline-block">
-          {t.backToProjects}
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-4xl mx-auto pb-24">
       {/* Header */}
-      <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6`}>
-        <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <Link to="/admin/projets" className="p-2 hover:bg-gray-100 rounded-lg">
-            <ArrowLeft className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            {isEdit ? t.editTitle : t.newTitle}
-          </h1>
-        </div>
-        <div className={`flex items-center gap-3 w-full sm:w-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <button
-            onClick={() => setIsPreview(!isPreview)}
-            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            <Eye className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {isPreview ? t.edit : t.preview}
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="flex-1 sm:flex-none btn-primary flex items-center justify-center"
-          >
-            <Save className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {isEdit ? t.save : t.publish}
-          </button>
-        </div>
-      </div>
-
-      {isPreview ? (
-        <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8">
-          <h2 className="text-2xl font-bold mb-4">{formData.title || t.projectTitle}</h2>
-          <p className="text-gray-600 mb-4">{formData.shortDescription || 'Description courte'}</p>
-          <div className="prose max-w-none">
-            <p className="whitespace-pre-line">{formData.description || t.placeholder}</p>
+      <header className="sticky top-0 z-20 bg-white/80 dark:bg-bg-dark-card/80 backdrop-blur-md border-b border-border-light dark:border-white/10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/admin/projects')}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h2 className="text-lg font-bold leading-tight tracking-tight text-text-primary dark:text-white">
+              {isEditMode ? t.editTitle : t.createTitle}
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="text-primary text-sm font-bold cursor-pointer hover:opacity-80">
+              {t.preview}
+            </button>
+            <button className="text-primary text-sm font-bold cursor-pointer hover:opacity-80">
+              {t.help}
+            </button>
           </div>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Main Info */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.mainInfo}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.projectTitle} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                  className="input-field"
-                  placeholder={language === 'ar' ? 'مثال: العودة المدرسية لـ 50 يتيماً' : 'Ex: Rentrée scolaire pour 50 orphelins'}
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.category} <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="input-field"
-                >
-                  {t.categories?.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.05em]">{t.completionProgress}</span>
+            <span className="text-xs font-bold text-primary">{progress}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      </header>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.goalAmount} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="goalAmount"
-                  value={formData.goalAmount}
-                  onChange={handleChange}
-                  required
-                  min="100"
-                  className="input-field"
-                  placeholder="25000"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.shortDesc}
-                </label>
-                <input
-                  type="text"
-                  name="shortDescription"
-                  value={formData.shortDescription}
-                  onChange={handleChange}
-                  maxLength={150}
-                  className="input-field"
-                  placeholder={language === 'ar' ? 'ملخص المشروع للبطاقات...' : 'Résumé du projet pour les cartes...'}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.shortDescription.length}/150 {t.charCount}
-                </p>
-              </div>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Information */}
+        <Card padding="lg">
+          <div className="flex items-center gap-2 mb-5">
+            <span className="material-symbols-outlined text-primary text-xl">info</span>
+            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.basicInfo}</h3>
           </div>
 
-          {/* Dates */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.dates}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.startDate}</label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.endDate}</label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                  className="input-field"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {t.endDateHelp}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Image */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.mainImage}</h2>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 sm:p-8 text-center hover:border-primary-500 transition-colors">
-              {formData.mainImage ? (
-                <div className="relative">
-                  <img src={formData.mainImage} alt="" className="max-h-48 mx-auto rounded-lg" />
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, mainImage: '' }))}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                  >
-                    ✕
-                  </button>
+          <div className="space-y-5">
+            {/* Main Image */}
+            <div className="relative group">
+              <div
+                className="aspect-video w-full rounded-xl bg-cover bg-center border border-border-light dark:border-white/10 overflow-hidden"
+                style={{ backgroundImage: `url('${formData.mainImage}')` }}
+              >
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="material-symbols-outlined text-white text-3xl">add_a_photo</span>
                 </div>
-              ) : (
-                <>
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">{t.clickOrDrag}</p>
-                  <p className="text-sm text-gray-500">{t.imageHint}</p>
-                  <input
-                    type="text"
-                    name="mainImage"
-                    value={formData.mainImage}
-                    onChange={handleChange}
-                    placeholder={t.imageUrl}
-                    className="mt-4 input-field w-full max-w-md mx-auto"
-                  />
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.fullDescription}</h2>
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
-              <div className={`flex items-center gap-2 p-3 border-b border-gray-300 bg-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <button type="button" className="p-2 hover:bg-gray-200 rounded" title={t.bold}><Bold className="w-4 h-4" /></button>
-                <button type="button" className="p-2 hover:bg-gray-200 rounded" title={t.italic}><Italic className="w-4 h-4" /></button>
-                <div className="w-px h-4 bg-gray-300" />
-                <button type="button" className="p-2 hover:bg-gray-200 rounded" title={t.list}><List className="w-4 h-4" /></button>
-                <button type="button" className="p-2 hover:bg-gray-200 rounded" title={t.image}><ImageIcon className="w-4 h-4" /></button>
               </div>
+            </div>
+
+            {/* Title with Language Tabs */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.projectTitle}</label>
+              <div className="flex gap-1 p-1 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg mb-3">
+                {['en', 'fr', 'ar'].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setActiveTab(lang)}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                      activeTab === lang
+                        ? 'bg-white text-primary shadow-sm border border-slate-100 dark:bg-slate-700 dark:border-slate-600'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                  >
+                    {lang.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={formData.title[activeTab]}
+                onChange={(e) => handleInputChange('title', e.target.value, activeTab)}
+                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.shortDescription}</label>
               <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={8}
-                className="w-full p-4 outline-none resize-none"
-                placeholder={t.placeholder}
+                value={formData.description[activeTab]}
+                onChange={(e) => handleInputChange('description', e.target.value, activeTab)}
+                rows={3}
+                className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
           </div>
+        </Card>
 
-          {/* Settings */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.settings}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{t.status}</label>
-                <div className={`flex gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  {['active', 'stopped'].map((status) => (
-                    <label key={status} className={`flex items-center gap-2 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <input
-                        type="radio"
-                        name="status"
-                        value={status}
-                        checked={formData.status === status}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-primary-600"
-                      />
-                      <span className="capitalize">{status === 'active' ? t.active : t.stopped}</span>
-                    </label>
-                  ))}
+        {/* Financial Settings */}
+        <Card padding="lg">
+          <div className="flex items-center gap-2 mb-5">
+            <span className="material-symbols-outlined text-primary text-xl">payments</span>
+            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.financialSettings}</h3>
+          </div>
+
+          <div className="space-y-5">
+            {/* Goal Amount */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.goalAmount}</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <span className="text-slate-400 text-sm">$</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {t.statusHelp}
-                </p>
+                <input
+                  type="number"
+                  value={formData.goal}
+                  onChange={(e) => handleInputChange('goal', parseInt(e.target.value))}
+                  className="w-full pl-8 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Currency */}
+              <div>
+                <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.currency}</label>
+                <select
+                  value={formData.currency}
+                  onChange={(e) => handleInputChange('currency', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="USD">USD - Dollars</option>
+                  <option value="MAD">MAD - Dirhams</option>
+                  <option value="EUR">EUR - Euros</option>
+                </select>
               </div>
 
-              <label className={`flex items-center gap-3 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <input
-                  type="checkbox"
-                  name="featured"
-                  checked={formData.featured}
-                  onChange={handleChange}
-                  className="w-5 h-5 text-primary-600 rounded"
-                />
-                <span className="text-gray-700">{t.featured}</span>
-              </label>
+              {/* Visibility */}
+              <div>
+                <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.visibility}</label>
+                <div className="flex items-center h-[46px] px-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{formData.visibility === 'public' ? t.public : t.private}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('visibility', formData.visibility === 'public' ? 'private' : 'public')}
+                    className={`ml-auto w-9 h-5 rounded-full relative cursor-pointer transition-colors ${
+                      formData.visibility === 'public' ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+                    }`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${
+                      formData.visibility === 'public' ? 'right-0.5' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
+        </Card>
+
+        {/* Media Gallery */}
+        <Card padding="lg">
+          <div className="flex items-center gap-2 mb-5">
+            <span className="material-symbols-outlined text-primary text-xl">perm_media</span>
+            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.mediaGallery}</h3>
           </div>
 
-          {/* Actions */}
-          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-            <Link to="/admin/projets" className="text-gray-600 hover:text-gray-900 text-center py-2">
-              ← {t.cancel}
-            </Link>
-            <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-              <button
-                type="button"
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                {t.saveDraft}
-              </button>
-              <button
-                type="submit"
-                className="btn-primary"
-              >
-                {isEdit ? t.saveChanges : t.publishProject}
-              </button>
+          <div className="grid grid-cols-3 gap-2">
+            {/* Add Button */}
+            <div className="aspect-square rounded-lg bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:border-primary/50 hover:text-primary transition-all cursor-pointer">
+              <span className="material-symbols-outlined mb-1">add_a_photo</span>
+              <span className="text-[10px] font-bold uppercase">{t.add}</span>
             </div>
+            {/* Gallery Images */}
+            {formData.gallery.map((image, index) => (
+              <div
+                key={index}
+                className="aspect-square rounded-lg bg-cover bg-center border border-border-light dark:border-white/10"
+                style={{ backgroundImage: `url('${image}')` }}
+              />
+            ))}
           </div>
-        </form>
-      )}
+          <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">{t.maxFiles}</p>
+        </Card>
+
+        {/* Location */}
+        <Card padding="lg">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-xl">location_on</span>
+              <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.location}</h3>
+            </div>
+            <button type="button" className="text-[11px] font-bold text-primary uppercase tracking-wider">
+              {t.editMap}
+            </button>
+          </div>
+
+          <div className="h-36 rounded-xl overflow-hidden relative border border-border-light dark:border-white/10">
+            <img
+              src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=600"
+              alt="Map"
+              className="w-full h-full object-cover saturate-50 opacity-80"
+            />
+            <div className="absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <span className="material-symbols-outlined text-primary text-3xl filled-icon drop-shadow-md" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
+          </div>
+          <div className="mt-4 flex items-start gap-2">
+            <span className="material-symbols-outlined text-slate-400 text-sm mt-0.5">place</span>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{formData.location}</p>
+          </div>
+        </Card>
+      </form>
+
+      {/* Footer Actions */}
+      <footer className="fixed bottom-0 left-0 right-0 lg:left-64 p-4 pb-8 bg-white/95 dark:bg-bg-dark-card/95 backdrop-blur-lg border-t border-border-light dark:border-white/10 flex gap-4 z-30">
+        <button
+          type="button"
+          onClick={() => navigate('/admin/projects')}
+          className="flex-1 py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-sm text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"
+        >
+          {t.saveDraft}
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="flex-[1.5] py-3.5 px-4 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform"
+        >
+          {t.publish}
+        </button>
+      </footer>
     </div>
   );
 };

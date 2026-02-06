@@ -1,233 +1,307 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MessageCircle, Download, Eye } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+
+// ============================================
+// ADMIN DONORS PAGE - Donor Directory & CRM
+// ============================================
 
 const AdminDonors = () => {
-  const { donors, formatCurrency, formatDate, language } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { currentLanguage } = useApp();
+  const [viewMode, setViewMode] = useState('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tierFilter, setTierFilter] = useState('all');
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
-      title: 'المتبرعون',
-      total: 'المجموع',
-      donors: 'متبرع',
-      exportCSV: 'تصدير CSV',
-      search: 'البحث بالاسم، البريد أو الهاتف...',
-      name: 'الاسم',
-      whatsapp: 'واتساب',
-      email: 'البريد الإلكتروني',
+      title: 'دليل المتبرعين',
+      search: 'البحث بالاسم أو البريد الإلكتروني...',
+      allDonors: 'جميع المتبرعين',
+      goldTier: 'الفئة الذهبية',
+      silverTier: 'الفئة الفضية',
+      bronzeTier: 'الفئة البرونزية',
+      donorDetails: 'تفاصيل المتبرع',
+      contribution: 'المساهمة',
       totalDonated: 'إجمالي التبرعات',
-      donationCount: 'عدد التبرعات',
-      lastDonation: 'آخر تبرع',
-      actions: 'إجراءات',
+      donations: 'تبرعات',
+      lastActive: 'آخر نشاط',
       view: 'عرض',
-      contact: 'تواصل عبر واتساب',
       noDonors: 'لا يوجد متبرعون',
     },
     fr: {
-      title: 'Donateurs',
-      total: 'Total',
-      donors: 'donateurs',
-      exportCSV: 'Exporter CSV',
-      search: 'Rechercher par nom, email ou téléphone...',
-      name: 'Nom',
-      whatsapp: 'WhatsApp',
-      email: 'Email',
-      totalDonated: 'Total donné',
-      donationCount: 'Nb dons',
-      lastDonation: 'Dernier don',
-      actions: 'Actions',
+      title: 'Annuaire des Donateurs',
+      search: 'Rechercher par nom ou email...',
+      allDonors: 'Tous les Donateurs',
+      goldTier: 'Niveau Or',
+      silverTier: 'Niveau Argent',
+      bronzeTier: 'Niveau Bronze',
+      donorDetails: 'Détails du Donateur',
+      contribution: 'Contribution',
+      totalDonated: 'Total Donné',
+      donations: 'Dons',
+      lastActive: 'Dernière Activité',
       view: 'Voir',
-      contact: 'Contacter sur WhatsApp',
       noDonors: 'Aucun donateur trouvé',
     },
     en: {
-      title: 'Donors',
-      total: 'Total',
-      donors: 'donors',
-      exportCSV: 'Export CSV',
-      search: 'Search by name, email or phone...',
-      name: 'Name',
-      whatsapp: 'WhatsApp',
-      email: 'Email',
+      title: 'Donors Directory',
+      search: 'Search by name or email...',
+      allDonors: 'All Donors',
+      goldTier: 'Gold Tier',
+      silverTier: 'Silver Tier',
+      bronzeTier: 'Bronze Tier',
+      donorDetails: 'Donor Details',
+      contribution: 'Contribution',
       totalDonated: 'Total Donated',
-      donationCount: 'Donations',
-      lastDonation: 'Last Donation',
-      actions: 'Actions',
+      donations: 'Donations',
+      lastActive: 'Last Active',
       view: 'View',
-      contact: 'Contact on WhatsApp',
       noDonors: 'No donors found',
     },
-  }[language] || {};
+  };
 
-  const getFilteredDonors = () => {
-    if (!searchTerm) return donors;
-    return donors.filter(d => 
-      d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.phone.includes(searchTerm)
+  const t = translations[currentLanguage.code] || translations.en;
+
+  // Mock donors data
+  const donors = [
+    {
+      id: 1,
+      name: 'Ahmed Mansouri',
+      email: 'ahmed.m@email.com',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+      tier: 'gold',
+      totalDonated: 25000,
+      donationsCount: 12,
+      lastActive: '2 days ago',
+    },
+    {
+      id: 2,
+      name: 'Fatima Zahra',
+      email: 'f.zahra@email.com',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+      tier: 'silver',
+      totalDonated: 8500,
+      donationsCount: 5,
+      lastActive: 'Oct 12, 2023',
+    },
+    {
+      id: 3,
+      name: 'Omar Berrada',
+      email: 'o.berrada@email.com',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
+      tier: 'bronze',
+      totalDonated: 1200,
+      donationsCount: 1,
+      lastActive: 'Sept 05, 2023',
+    },
+    {
+      id: 4,
+      name: 'Leila Benani',
+      email: 'leila.b@email.com',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
+      tier: 'gold',
+      totalDonated: 15000,
+      donationsCount: 8,
+      lastActive: '1 week ago',
+    },
+    {
+      id: 5,
+      name: 'Karim Idrissi',
+      email: 'karim.i@email.com',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
+      tier: 'silver',
+      totalDonated: 5200,
+      donationsCount: 3,
+      lastActive: '3 days ago',
+    },
+    {
+      id: 6,
+      name: 'Samira Tazi',
+      email: 'samira.t@email.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+      tier: 'bronze',
+      totalDonated: 800,
+      donationsCount: 2,
+      lastActive: '1 month ago',
+    },
+  ];
+
+  const filteredDonors = donors.filter(donor => {
+    const matchesSearch = donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         donor.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTier = tierFilter === 'all' || donor.tier === tierFilter;
+    return matchesSearch && matchesTier;
+  });
+
+  const getTierBadge = (tier) => {
+    const tierConfig = {
+      gold: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800/50', label: t.goldTier },
+      silver: { bg: 'bg-slate-100 dark:bg-slate-700', text: 'text-slate-600 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-600', label: t.silverTier },
+      bronze: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800/50', label: t.bronzeTier },
+    };
+    const config = tierConfig[tier] || tierConfig.bronze;
+    return (
+      <span className={`${config.bg} ${config.text} ${config.border} text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest border`}>
+        {config.label}
+      </span>
     );
   };
 
-  const filteredDonors = getFilteredDonors();
-
-  const handleExport = () => {
-    alert(language === 'ar' ? 'جاري تصدير CSV...' : language === 'fr' ? 'Export CSV en cours...' : 'Exporting CSV...');
-  };
-
-  const isRTL = language === 'ar';
-
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
-          <p className="text-gray-600 mt-1">{t.total}: <span className="font-semibold">{donors.length}</span> {t.donors}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-slate-500 hover:text-primary hover:bg-primary/10'}`}
+          >
+            <span className="material-symbols-outlined">grid_view</span>
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-slate-500 hover:text-primary hover:bg-primary/10'}`}
+          >
+            <span className="material-symbols-outlined">view_list</span>
+          </button>
         </div>
-        <button
-          onClick={handleExport}
-          className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 w-full sm:w-auto"
-        >
-          <Download className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t.exportCSV}
-        </button>
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-        <div className="relative max-w-md">
-          <Search className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
+      <div className="relative">
+        <div className="flex w-full flex-1 items-stretch rounded-xl h-14 shadow-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <div className="text-primary flex items-center justify-center pl-4 rounded-l-xl">
+            <span className="material-symbols-outlined">search</span>
+          </div>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.search}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-300 outline-none`}
+            className="w-full border-none bg-transparent focus:ring-0 text-base text-text-primary dark:text-white placeholder:text-slate-400 px-4"
           />
         </div>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="block lg:hidden space-y-4">
-        {filteredDonors.map((donor) => (
-          <div key={donor.id} className="bg-white rounded-xl shadow-sm p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-primary-600 font-medium text-lg">{donor.name.charAt(0)}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">{donor.name}</p>
-                <p className="text-sm text-gray-500">{donor.phone}</p>
-              </div>
-            </div>
-            
-            <div className="space-y-2 mb-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.email}:</span>
-                <span className="text-gray-700 truncate max-w-[150px]">{donor.email}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.totalDonated}:</span>
-                <span className="font-semibold text-gray-900">{formatCurrency(donor.totalDonated)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.donationCount}:</span>
-                <span className="text-gray-700">{donor.donationCount}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.lastDonation}:</span>
-                <span className="text-gray-600">{formatDate(donor.lastDonation)}</span>
-              </div>
-            </div>
-
-            <div className={`flex gap-2 pt-3 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <Link 
-                to={`/admin/donateurs/${donor.id}`}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100"
-              >
-                <Eye className="w-4 h-4" /> {t.view}
-              </Link>
-              <a
-                href={`https://wa.me/${donor.phone.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-green-600 bg-green-50 rounded-lg hover:bg-green-100"
-              >
-                <MessageCircle className="w-4 h-4" /> {t.whatsapp}
-              </a>
-            </div>
-          </div>
+      {/* Tier Filters */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        {[
+          { key: 'all', label: t.allDonors },
+          { key: 'gold', label: t.goldTier },
+          { key: 'silver', label: t.silverTier },
+          { key: 'bronze', label: t.bronzeTier },
+        ].map((filter) => (
+          <button
+            key={filter.key}
+            onClick={() => setTierFilter(filter.key)}
+            className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg px-4 transition-colors ${
+              tierFilter === filter.key
+                ? 'bg-primary text-white shadow-md'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <span className="text-sm font-medium">{filter.label}</span>
+          </button>
         ))}
-        {filteredDonors.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-500">{t.noDonors}</p>
-          </div>
-        )}
       </div>
 
-      {/* Desktop Table */}
-      <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.name}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.whatsapp}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.email}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.totalDonated}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.donationCount}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.lastDonation}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.actions}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredDonors.map((donor) => (
-                <tr key={donor.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-primary-600 font-medium">{donor.name.charAt(0)}</span>
-                      </div>
-                      <span className="font-medium text-gray-900">{donor.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{donor.phone}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{donor.email}</td>
-                  <td className="px-4 py-3 font-semibold text-gray-900">{formatCurrency(donor.totalDonated)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{donor.donationCount}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(donor.lastDonation)}</td>
-                  <td className="px-4 py-3">
-                    <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <Link 
-                        to={`/admin/donateurs/${donor.id}`}
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
-                        title={t.view}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      <a
-                        href={`https://wa.me/${donor.phone.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 hover:bg-green-100 rounded-lg text-green-600"
-                        title={t.contact}
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredDonors.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">{t.noDonors}</p>
+      {/* Column Headers (List View Only) */}
+      {viewMode === 'list' && (
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">
+          <div className="flex items-center gap-1">
+            <span>{t.donorDetails}</span>
+            <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
           </div>
-        )}
+          <div className="flex items-center gap-1">
+            <span>{t.contribution}</span>
+            <span className="material-symbols-outlined text-[14px]">unfold_more</span>
+          </div>
+        </div>
+      )}
+
+      {/* Donors Grid/List */}
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-3'}>
+        {filteredDonors.map((donor) => (
+          <Card key={donor.id} padding="lg" className="flex flex-col gap-3">
+            {/* Header */}
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 rounded-full h-12 w-12 flex items-center justify-center overflow-hidden">
+                  {donor.avatar ? (
+                    <img src={donor.avatar} alt={donor.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="material-symbols-outlined text-primary">person</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-text-primary dark:text-white font-bold text-base">{donor.name}</p>
+                  <p className="text-slate-500 text-xs flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">mail</span>
+                    {donor.email}
+                  </p>
+                </div>
+              </div>
+              {getTierBadge(donor.tier)}
+            </div>
+
+            {/* Stats */}
+            <div className="flex justify-between items-center pt-3 border-t border-slate-50 dark:border-slate-700/50">
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-slate-400 uppercase font-bold">{t.totalDonated}</p>
+                <p className="text-primary font-bold">{donor.totalDonated.toLocaleString()} DH</p>
+              </div>
+              <div className="text-right space-y-0.5">
+                <p className="text-[10px] text-slate-400 uppercase font-bold">{t.donations}</p>
+                <p className="text-slate-700 dark:text-slate-200 font-medium">{donor.donationsCount} Gifts</p>
+              </div>
+              <Link
+                to={`/admin/donors/${donor.id}`}
+                className="flex gap-2"
+              >
+                <button className="p-2 text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
+                  <span className="material-symbols-outlined text-xl">visibility</span>
+                </button>
+              </Link>
+            </div>
+
+            {/* Last Active */}
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[11px] text-slate-400 italic">{t.lastActive}: {donor.lastActive}</span>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredDonors.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-outlined text-3xl text-slate-400">person_off</span>
+          </div>
+          <h3 className="text-lg font-medium text-text-primary dark:text-white mb-2">{t.noDonors}</h3>
+          <p className="text-slate-500">Try adjusting your search or filters</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+          <button className="p-2 text-slate-400 hover:text-primary transition-colors disabled:opacity-30" disabled>
+            <span className="material-symbols-outlined">chevron_left</span>
+          </button>
+          <div className="flex items-center gap-1 px-2">
+            <span className="text-sm font-bold text-primary">1</span>
+            <span className="text-sm text-slate-400">/</span>
+            <span className="text-sm text-slate-400">12</span>
+          </div>
+          <button className="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors">
+            <span className="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
       </div>
     </div>
   );

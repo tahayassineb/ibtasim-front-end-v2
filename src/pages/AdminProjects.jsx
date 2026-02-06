@@ -1,364 +1,385 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, MoreVertical, Edit, Eye, Trash2, Pin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import ProgressBar from '../components/ProgressBar';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+import Input from '../components/Input';
+
+// ============================================
+// ADMIN PROJECTS PAGE - Project Management
+// ============================================
 
 const AdminProjects = () => {
-  const { projects, formatCurrency, getStatusLabel, getStatusColor, deleteProject, updateProject, language } = useApp();
-  const navigate = useNavigate();
-  const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showDropdown, setShowDropdown] = useState(null);
+  const { currentLanguage } = useApp();
+  const [viewMode, setViewMode] = useState('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
       title: 'إدارة المشاريع',
       newProject: 'مشروع جديد',
+      search: 'البحث في المشاريع...',
       all: 'الكل',
       active: 'نشط',
-      funded: 'ممول',
-      finished: 'منتهي',
-      stopped: 'متوقف',
-      expired: 'منتهي الصلاحية',
-      search: 'البحث في المشاريع...',
-      project: 'المشروع',
-      status: 'الحالة',
-      progress: 'التقدم',
+      completed: 'مكتمل',
+      draft: 'مسودة',
+      grid: 'شبكة',
+      list: 'قائمة',
       goal: 'الهدف',
-      donors: 'المتبرعين',
-      created: 'تاريخ الإنشاء',
-      actions: 'إجراءات',
-      view: 'عرض',
+      raised: 'تم جمعه',
+      donors: 'متبرعون',
+      daysLeft: 'يوم متبقي',
       edit: 'تعديل',
-      pin: 'تثبيت',
-      unpin: 'إلغاء التثبيت',
-      changeStatus: 'تغيير الحالة',
-      delete: 'حذف',
+      view: 'عرض',
       noProjects: 'لا توجد مشاريع',
-      featured: 'مثبت',
     },
     fr: {
-      title: 'Gestion des projets',
-      newProject: 'Nouveau projet',
+      title: 'Gestion des Projets',
+      newProject: 'Nouveau Projet',
+      search: 'Rechercher des projets...',
       all: 'Tous',
-      active: 'Actifs',
-      funded: 'Financés',
-      finished: 'Terminés',
-      stopped: 'Arrêtés',
-      expired: 'Expirés',
-      search: 'Rechercher un projet...',
-      project: 'Projet',
-      status: 'Statut',
-      progress: 'Progression',
+      active: 'Actif',
+      completed: 'Terminé',
+      draft: 'Brouillon',
+      grid: 'Grille',
+      list: 'Liste',
       goal: 'Objectif',
+      raised: 'Collecté',
       donors: 'Donateurs',
-      created: 'Créé le',
-      actions: 'Actions',
-      view: 'Voir',
+      daysLeft: 'jours restants',
       edit: 'Modifier',
-      pin: 'Mettre en avant',
-      unpin: 'Retirer',
-      changeStatus: 'Changer le statut',
-      delete: 'Supprimer',
+      view: 'Voir',
       noProjects: 'Aucun projet trouvé',
-      featured: 'Mis en avant',
     },
     en: {
       title: 'Project Management',
       newProject: 'New Project',
+      search: 'Search projects...',
       all: 'All',
       active: 'Active',
-      funded: 'Funded',
-      finished: 'Finished',
-      stopped: 'Stopped',
-      expired: 'Expired',
-      search: 'Search projects...',
-      project: 'Project',
-      status: 'Status',
-      progress: 'Progress',
+      completed: 'Completed',
+      draft: 'Draft',
+      grid: 'Grid',
+      list: 'List',
       goal: 'Goal',
+      raised: 'Raised',
       donors: 'Donors',
-      created: 'Created',
-      actions: 'Actions',
-      view: 'View',
+      daysLeft: 'days left',
       edit: 'Edit',
-      pin: 'Pin',
-      unpin: 'Unpin',
-      changeStatus: 'Change Status',
-      delete: 'Delete',
+      view: 'View',
       noProjects: 'No projects found',
-      featured: 'Featured',
     },
-  }[language] || {};
+  };
 
-  const filters = [
-    { key: 'all', label: t.all },
-    { key: 'active', label: t.active },
-    { key: 'funded', label: t.funded },
-    { key: 'finished', label: t.finished },
-    { key: 'stopped', label: t.stopped },
-    { key: 'expired', label: t.expired },
+  const t = translations[currentLanguage.code] || translations.en;
+
+  // Mock projects data
+  const projects = [
+    {
+      id: 1,
+      title: 'Clean Water Initiative',
+      category: 'Water',
+      status: 'active',
+      goal: 50000,
+      raised: 32500,
+      donors: 142,
+      daysLeft: 45,
+      image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=400',
+    },
+    {
+      id: 2,
+      title: 'School Supplies Drive',
+      category: 'Education',
+      status: 'active',
+      goal: 15000,
+      raised: 8750,
+      donors: 89,
+      daysLeft: 30,
+      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400',
+    },
+    {
+      id: 3,
+      title: 'Winter Relief Program',
+      category: 'Humanitarian',
+      status: 'completed',
+      goal: 30000,
+      raised: 31250,
+      donors: 203,
+      daysLeft: 0,
+      image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400',
+    },
+    {
+      id: 4,
+      title: 'Medical Aid Campaign',
+      category: 'Health',
+      status: 'draft',
+      goal: 75000,
+      raised: 0,
+      donors: 0,
+      daysLeft: 60,
+      image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400',
+    },
+    {
+      id: 5,
+      title: 'Food Security Program',
+      category: 'Food',
+      status: 'active',
+      goal: 25000,
+      raised: 18750,
+      donors: 156,
+      daysLeft: 20,
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400',
+    },
+    {
+      id: 6,
+      title: 'Youth Empowerment',
+      category: 'Education',
+      status: 'active',
+      goal: 20000,
+      raised: 5600,
+      donors: 47,
+      daysLeft: 90,
+      image: 'https://images.unsplash.com/photo-1529390079861-591d3549b7f5?w=400',
+    },
   ];
 
-  const getFilteredProjects = () => {
-    let filtered = projects;
-    if (filter !== 'all') {
-      filtered = filtered.filter(p => p.status === filter);
-    }
-    if (searchTerm) {
-      filtered = filtered.filter(p => 
-        p.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    return filtered;
+  // Filter projects
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         project.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      active: { variant: 'success', label: t.active },
+      completed: { variant: 'neutral', label: t.completed },
+      draft: { variant: 'warning', label: t.draft },
+    };
+    const config = statusConfig[status] || statusConfig.draft;
+    return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
   };
-
-  const filteredProjects = getFilteredProjects();
-  const projectCounts = filters.reduce((acc, f) => ({
-    ...acc,
-    [f.key]: f.key === 'all' ? projects.length : projects.filter(p => p.status === f.key).length
-  }), {});
-
-  const handleDelete = (id) => {
-    if (window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا المشروع؟' : language === 'fr' ? 'Êtes-vous sûr de vouloir supprimer ce projet?' : 'Are you sure you want to delete this project?')) {
-      deleteProject(id);
-    }
-    setShowDropdown(null);
-  };
-
-  const handlePin = (project) => {
-    updateProject(project.id, { featured: !project.featured });
-    setShowDropdown(null);
-  };
-
-  const handleStatusChange = (project, newStatus) => {
-    updateProject(project.id, { status: newStatus });
-    setShowDropdown(null);
-  };
-
-  const isRTL = language === 'ar';
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
-        <Link to="/admin/projets/nouveau" className="btn-primary flex items-center w-full sm:w-auto justify-center">
-          <Plus className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t.newProject}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
+        <Link
+          to="/admin/projects/new"
+          className="flex items-center justify-center gap-2 rounded-xl h-12 px-6 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-colors"
+        >
+          <span className="material-symbols-outlined">add</span>
+          <span>{t.newProject}</span>
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === f.key
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {f.label} ({projectCounts[f.key]})
-              </button>
-            ))}
-          </div>
-          <div className="relative w-full lg:w-64">
-            <Search className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
-            <input
-              type="text"
-              placeholder={t.search}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-300 outline-none`}
-            />
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Search */}
+        <div className="flex-1 relative">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+            search
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t.search}
+            className="w-full h-12 pl-12 pr-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-primary dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <div className="flex gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">{t.all}</option>
+            <option value="active">{t.active}</option>
+            <option value="completed">{t.completed}</option>
+            <option value="draft">{t.draft}</option>
+          </select>
+
+          {/* View Toggle */}
+          <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-3 ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined">grid_view</span>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-3 ${viewMode === 'list' ? 'bg-primary text-white' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined">view_list</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Projects Table - Mobile Card View */}
-      <div className="block lg:hidden space-y-4">
-        {filteredProjects.map((project) => {
-          const percentage = Math.round((project.raisedAmount / project.goalAmount) * 100);
-          return (
-            <div key={project.id} className="bg-white rounded-xl shadow-sm p-4">
-              <div className="flex items-start gap-3 mb-3">
-                <img src={project.mainImage} alt="" className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 text-sm line-clamp-2">{project.title}</h3>
-                  {project.featured && (
-                    <span className="text-xs text-primary-600">📌 {t.featured}</span>
+      {/* Projects Grid/List */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredProjects.map((project) => (
+            <Card key={project.id} padding="none" className="overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Image */}
+              <div className="relative h-48">
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3">
+                  {getStatusBadge(project.status)}
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                  <span className="text-white/80 text-sm">{project.category}</span>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-5">
+                <h3 className="font-bold text-text-primary dark:text-white text-lg mb-3">{project.title}</h3>
+
+                {/* Progress */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-500">{t.raised}</span>
+                    <span className="font-bold text-primary">{project.raised.toLocaleString()} DH</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${Math.min((project.raised / project.goal) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400 mt-1">
+                    <span>{Math.round((project.raised / project.goal) * 100)}% {t.goal}</span>
+                    <span>{project.goal.toLocaleString()} DH</span>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center justify-between text-sm mb-4">
+                  <div className="flex items-center gap-1 text-slate-500">
+                    <span className="material-symbols-outlined text-sm">people</span>
+                    <span>{project.donors} {t.donors}</span>
+                  </div>
+                  {project.daysLeft > 0 && (
+                    <div className="flex items-center gap-1 text-slate-500">
+                      <span className="material-symbols-outlined text-sm">schedule</span>
+                      <span>{project.daysLeft} {t.daysLeft}</span>
+                    </div>
                   )}
-                  <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${getStatusColor(project.status)}`}>
-                    {getStatusLabel(project.status)}
-                  </span>
                 </div>
-              </div>
-              
-              <div className="space-y-2 mb-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">{t.goal}:</span>
-                  <span className="font-medium">{formatCurrency(project.goalAmount)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">{t.donors}:</span>
-                  <span className="font-medium">{project.donorsCount}</span>
-                </div>
-                <div>
-                  <ProgressBar percentage={percentage} size="sm" />
-                  <span className="text-xs text-gray-500">{percentage}%</span>
-                </div>
-              </div>
 
-              <div className={`flex gap-2 pt-3 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <Link
-                  to={`/admin/projets/${project.id}`}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100"
-                >
-                  <Eye className="w-4 h-4" /> {t.view}
-                </Link>
-                <Link
-                  to={`/admin/projets/${project.id}/modifier`}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  <Edit className="w-4 h-4" /> {t.edit}
-                </Link>
-                <button
-                  onClick={() => handleDelete(project.id)}
-                  className="px-3 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Link
+                    to={`/admin/projects/${project.id}/edit`}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    {t.edit}
+                  </Link>
+                  <Link
+                    to={`/admin/projects/${project.id}`}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">visibility</span>
+                    {t.view}
+                  </Link>
+                </div>
               </div>
-            </div>
-          );
-        })}
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-500">{t.noProjects}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Projects Table - Desktop */}
-      <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.project}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.status}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.progress}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.goal}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.donors}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.created}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.actions}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredProjects.map((project) => {
-                const percentage = Math.round((project.raisedAmount / project.goalAmount) * 100);
-                return (
-                  <tr key={project.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <img src={project.mainImage} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                        <div className={isRTL ? 'text-right' : ''}>
-                          <p className="font-medium text-gray-900">{project.title}</p>
-                          {project.featured && (
-                            <span className="text-xs text-primary-600">📌 {t.featured}</span>
-                          )}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        /* List View */
+        <Card padding="none" className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 dark:bg-slate-800/50">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Project</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Progress</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Donors</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredProjects.map((project) => (
+                  <tr key={project.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          className="w-12 h-12 rounded-lg object-cover"
+                        />
+                        <div>
+                          <p className="font-medium text-text-primary dark:text-white">{project.title}</p>
+                          <p className="text-sm text-slate-500">{project.category}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusColor(project.status)}`}>
-                        {getStatusLabel(project.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">{getStatusBadge(project.status)}</td>
+                    <td className="px-6 py-4">
                       <div className="w-32">
-                        <ProgressBar percentage={percentage} size="sm" />
-                        <span className="text-xs text-gray-500">{percentage}%</span>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-slate-500">{Math.round((project.raised / project.goal) * 100)}%</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${Math.min((project.raised / project.goal) * 100, 100)}%` }}
+                          />
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {formatCurrency(project.goalAmount)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {project.donorsCount}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(project.createdAt).toLocaleDateString('fr-MA')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowDropdown(showDropdown === project.id ? null : project.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg"
+                    <td className="px-6 py-4 text-sm text-text-primary dark:text-white">{project.donors}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <Link
+                          to={`/admin/projects/${project.id}/edit`}
+                          className="p-2 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
                         >
-                          <MoreVertical className="w-5 h-5 text-gray-500" />
-                        </button>
-                        {showDropdown === project.id && (
-                          <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10`}>
-                            <Link
-                              to={`/admin/projets/${project.id}`}
-                              className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}
-                            >
-                              <Eye className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t.view}
-                            </Link>
-                            <Link
-                              to={`/admin/projets/${project.id}/modifier`}
-                              className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}
-                            >
-                              <Edit className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t.edit}
-                            </Link>
-                            <button
-                              onClick={() => handlePin(project)}
-                              className={`flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 ${isRTL ? 'flex-row-reverse' : ''}`}
-                            >
-                              <Pin className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              {project.featured ? t.unpin : t.pin}
-                            </button>
-                            <hr className="my-1" />
-                            <p className="px-4 py-1 text-xs text-gray-500">{t.changeStatus}:</p>
-                            {['active', 'stopped', 'finished'].map((status) => (
-                              <button
-                                key={status}
-                                onClick={() => handleStatusChange(project, status)}
-                                className={`flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 capitalize ${isRTL ? 'flex-row-reverse' : ''}`}
-                              >
-                                {getStatusLabel(status)}
-                              </button>
-                            ))}
-                            <hr className="my-1" />
-                            <button
-                              onClick={() => handleDelete(project.id)}
-                              className={`flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 ${isRTL ? 'flex-row-reverse' : ''}`}
-                            >
-                              <Trash2 className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t.delete}
-                            </button>
-                          </div>
-                        )}
+                          <span className="material-symbols-outlined">edit</span>
+                        </Link>
+                        <Link
+                          to={`/admin/projects/${project.id}`}
+                          className="p-2 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                        </Link>
                       </div>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">{t.noProjects}</p>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {filteredProjects.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-outlined text-3xl text-slate-400">folder_off</span>
+          </div>
+          <h3 className="text-lg font-medium text-text-primary dark:text-white mb-2">{t.noProjects}</h3>
+          <p className="text-slate-500">Try adjusting your search or filters</p>
+        </div>
+      )}
     </div>
   );
 };

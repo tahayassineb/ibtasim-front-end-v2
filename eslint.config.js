@@ -24,6 +24,13 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['tailwind.config.js', 'postcss.config.js', 'vite.config.js'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 ])

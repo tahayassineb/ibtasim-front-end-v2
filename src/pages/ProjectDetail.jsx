@@ -1,363 +1,243 @@
 import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Users, Clock, CheckCircle, XCircle, MessageCircle, Facebook, Copy, Heart } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import ProgressBar from '../components/ProgressBar';
-import ProjectCard from '../components/ProjectCard';
+import { Card, Button, ProgressBar } from '../components';
+
+// ============================================
+// PROJECT DETAIL PAGE - Glassmorphic Sidebar
+// ============================================
 
 const ProjectDetail = () => {
+  const { t, language } = useApp();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getProjectById, projects, formatCurrency, formatDate, formatRelativeTime } = useApp();
-  const [activeTab, setActiveTab] = useState('description');
-  const [showShareToast, setShowShareToast] = useState(false);
 
-  const project = getProjectById(id);
-
-  if (!project) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Projet non trouvé</h1>
-          <Link to="/projets" className="btn-primary">
-            Voir tous les projets
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const percentage = Math.round((project.raisedAmount / project.goalAmount) * 100);
-  const isActive = project.status === 'active';
-  const isFunded = project.status === 'funded';
-  const isFinished = project.status === 'finished';
-  const relatedProjects = projects
-    .filter(p => p.id !== project.id && p.category === project.category)
-    .slice(0, 2);
-
-  const handleShare = (platform) => {
-    const url = window.location.href;
-    if (platform === 'copy') {
-      navigator.clipboard.writeText(url);
-      setShowShareToast(true);
-      setTimeout(() => setShowShareToast(false), 2000);
-    } else if (platform === 'facebook') {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-    } else if (platform === 'whatsapp') {
-      window.open(`https://wa.me/?text=${encodeURIComponent(`Soutenez ce projet: ${project.title} ${url}`)}`, '_blank');
-    }
+  // Mock project data - in real app, fetch by id
+  const project = {
+    id: id,
+    title: {
+      en: 'Sustainable Atlas Education Hub',
+      fr: 'Centre d\'Éducation Durable de l\'Atlas',
+      ar: 'مركز التعليم المستدام في الأطلس',
+    },
+    location: {
+      en: 'High Atlas Mountains, Morocco',
+      fr: 'Haut Atlas, Maroc',
+      ar: 'جبال الأطلس العالي، المغرب',
+    },
+    description: {
+      en: 'In the heart of the High Atlas, children travel hours to reach basic education. Our mission is to build a sustainable, eco-friendly school that serves as a beacon of hope for three surrounding villages.',
+      fr: 'Au cœur du Haut Atlas, les enfants parcourent des heures pour accéder à l\'éducation de base. Notre mission est de construire une école durable et écologique qui serve de phare d\'espoir pour trois villages environnants.',
+      ar: 'في قلب الأطلس العالي، يسافر الأطفال ساعات للوصول إلى التعليم الأساسي. مهمتنا هي بناء مدرسة مستدامة وصديقة للبيئة تكون منارة أمل لثلاث قرى مجاورة.',
+    },
+    description2: {
+      en: 'The architecture draws inspiration from traditional earth-building techniques, ensuring natural thermal regulation during harsh winters and hot summers, combined with modern solar energy and digital facilities.',
+      fr: 'L\'architecture s\'inspire des techniques traditionnelles de construction en terre, assurant une régulation thermique naturelle pendant les hivers rigoureux et les étés chauds, combinée avec l\'énergie solaire moderne et les installations numériques.',
+      ar: 'يستلهم العمارة التقنيات التقليدية للبناء بالطين، مما يضمن التنظيم الحراري الطبيعي خلال فصول الشتاء القاسية والصيف الحار، بالإضافة إلى الطاقة الشمسية الحديثة والمرافق الرقمية.',
+    },
+    raised: 52480,
+    goal: 75000,
+    progress: 70,
+    donors: 124,
+    daysLeft: 12,
+    category: 'education',
+    image: 'https://images.unsplash.com/photo-1564429238984-b3cd3a5ba0b4?w=1200&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80',
+      'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
+      'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80',
+    ],
+    updates: [
+      {
+        id: 1,
+        date: 'Oct 24, 2023',
+        title: {
+          en: 'Foundation Completed',
+          fr: 'Fondation Terminée',
+          ar: 'اكتمل الأساس',
+        },
+        description: {
+          en: 'The main structure base is now secure and ready for wall assembly.',
+          fr: 'La base de la structure principale est maintenant sécurisée et prête pour l\'assemblage des murs.',
+          ar: 'قاعدة الهيكل الرئيسي آمنة الآن وجاهزة لتجميع الجدران.',
+        },
+        icon: 'foundation',
+      },
+      {
+        id: 2,
+        date: 'Nov 15, 2023',
+        title: {
+          en: 'Materials Delivered',
+          fr: 'Matériaux Livrés',
+          ar: 'تم تسليم المواد',
+        },
+        description: {
+          en: 'All sustainable building materials have arrived at the construction site.',
+          fr: 'Tous les matériaux de construction durables sont arrivés sur le chantier.',
+          ar: 'وصلت جميع مواد البناء المستدامة إلى موقع البناء.',
+        },
+        icon: 'local_shipping',
+      },
+    ],
   };
 
-  const getStatusBadge = () => {
-    if (isFunded) return { text: '🎉 Objectif atteint!', className: 'bg-yellow-100 text-yellow-800' };
-    if (isFinished) return { text: '✓ Projet terminé', className: 'bg-blue-100 text-blue-800' };
-    if (project.status === 'stopped') return { text: 'Projet arrêté', className: 'bg-orange-100 text-orange-800' };
-    if (project.status === 'expired') return { text: 'Projet expiré', className: 'bg-red-100 text-red-800' };
-    return null;
-  };
-
-  const statusBadge = getStatusBadge();
-
-  const renderDonationButton = () => {
-    if (isActive) {
-      return (
-        <button
-          onClick={() => navigate(`/don/${project.id}/montant`)}
-          className="w-full btn-primary text-lg py-4"
-        >
-          Faire un don
-        </button>
-      );
-    }
-    if (isFunded) {
-      return (
-        <div className="text-center">
-          <button disabled className="w-full bg-yellow-100 text-yellow-800 font-medium py-4 rounded-lg cursor-not-allowed">
-            🎉 Objectif atteint
-          </button>
-          <p className="mt-3 text-green-700 font-medium">Merci à tous les donateurs!</p>
-          <Link to="/projets" className="inline-block mt-2 text-primary-600 hover:underline">
-            Découvrir d'autres projets →
-          </Link>
-        </div>
-      );
-    }
-    return (
-      <div className="text-center">
-        <button disabled className="w-full bg-blue-100 text-blue-800 font-medium py-4 rounded-lg cursor-not-allowed">
-          ✓ Ce projet est terminé
-        </button>
-        <p className="mt-3 text-gray-600">Ce projet a été réalisé avec succès</p>
-        <Link to="/projets" className="inline-block mt-2 text-primary-600 hover:underline">
-          Découvrir d'autres projets →
-        </Link>
-      </div>
-    );
+  const getLocalizedText = (obj) => {
+    if (typeof obj === 'string') return obj;
+    return obj[language] || obj.en;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Image */}
-      <div className="relative h-64 md:h-96">
-        <img 
-          src={project.mainImage} 
-          alt={project.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute top-4 left-4">
-          <Link 
-            to="/projets" 
-            className="flex items-center space-x-2 text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-black/50 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Retour</span>
-          </Link>
+    <div className="bg-bg-light dark:bg-bg-dark min-h-screen">
+      {/* Main Content Container */}
+      <div className="flex flex-col gap-6 px-4 pb-10 max-w-desktop mx-auto">
+        {/* Hero Image */}
+        <div className="w-full">
+          <div
+            className="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-xl min-h-[300px] md:min-h-[400px] shadow-sm"
+            style={{ backgroundImage: `url("${project.image}")` }}
+          />
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Category & Status */}
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                {project.category}
+        {/* Headline Text */}
+        <div className="flex flex-col">
+          <h1 className="text-text-primary dark:text-white tracking-tight text-[28px] md:text-[32px] font-bold leading-tight pt-2">
+            {getLocalizedText(project.title)}
+          </h1>
+          <div className="flex items-center gap-2 mt-2 text-primary font-medium">
+            <span className="material-symbols-outlined text-sm">location_on</span>
+            <span className="text-sm">{getLocalizedText(project.location)}</span>
+          </div>
+        </div>
+
+        {/* Sticky Donation Card (Glassmorphic) */}
+        <div className="bg-white/70 dark:bg-bg-dark-card/70 backdrop-blur-xl rounded-xl p-6 shadow-xl sticky top-20 z-40 border border-white/20 dark:border-white/10">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-sm text-text-secondary dark:text-text-white/60">
+                  {language === 'ar'
+                    ? 'تم جمعه من أصل $75,000'
+                    : language === 'fr'
+                    ? 'Collecté sur $75,000'
+                    : 'Raised of $75,000'}
+                </p>
+                <h3 className="text-2xl font-bold text-primary">${project.raised.toLocaleString()}</h3>
+              </div>
+              <p className="text-sm font-bold text-text-primary dark:text-white">{project.progress}%</p>
+            </div>
+            {/* Progress Bar */}
+            <div className="w-full bg-primary/20 rounded-full h-4 overflow-hidden">
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-500"
+                style={{ width: `${project.progress}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs font-medium text-text-secondary dark:text-text-white/70">
+              <span>
+                {project.donors} {language === 'ar' ? 'متبرع' : language === 'fr' ? 'Donateurs' : 'Donors'}
               </span>
-              {statusBadge && (
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusBadge.className}`}>
-                  {statusBadge.text}
-                </span>
-              )}
+              <span>
+                {project.daysLeft} {language === 'ar' ? 'يوم متبقي' : language === 'fr' ? 'Jours Restants' : 'Days Left'}
+              </span>
             </div>
-
-            {/* Title */}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              {project.title}
-            </h1>
-
-            {/* Mobile Progress Box */}
-            <div className="lg:hidden bg-white rounded-xl p-6 shadow-sm mb-6">
-              <ProgressBar percentage={percentage} size="lg" showLabel />
-              <div className="flex justify-between mt-3 text-sm">
-                <span className="font-bold text-xl">{formatCurrency(project.raisedAmount)}</span>
-                <span className="text-gray-500">sur {formatCurrency(project.goalAmount)}</span>
-              </div>
-              <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <Users className="w-4 h-4 mr-1" />
-                  <span>{project.donorsCount} donateurs</span>
-                </div>
-                {isActive && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>{project.daysLeft} jours restants</span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-6">
-                {renderDonationButton()}
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="border-b border-gray-200">
-                <nav className="flex">
-                  {['description', 'updates', 'donors'].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`flex-1 py-4 px-6 text-sm font-medium text-center border-b-2 transition-colors ${
-                        activeTab === tab
-                          ? 'border-primary-500 text-primary-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      {tab === 'description' && 'Description'}
-                      {tab === 'updates' && `Mises à jour (${project.updates?.length || 0})`}
-                      {tab === 'donors' && 'Donateurs'}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-
-              <div className="p-6">
-                {activeTab === 'description' && (
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                      {project.description}
-                    </p>
-                    {project.gallery && project.gallery.length > 0 && (
-                      <div className="mt-8 grid grid-cols-2 gap-4">
-                        {project.gallery.map((img, idx) => (
-                          <img 
-                            key={idx} 
-                            src={img} 
-                            alt={`${project.title} - ${idx + 1}`}
-                            className="rounded-lg w-full h-48 object-cover"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === 'updates' && (
-                  <div className="space-y-6">
-                    {project.updates && project.updates.length > 0 ? (
-                      project.updates.map((update) => (
-                        <div key={update.id} className="border-l-2 border-primary-200 pl-4">
-                          <p className="text-sm text-gray-500 mb-1">{formatRelativeTime(update.date)}</p>
-                          <h4 className="font-semibold text-gray-900 mb-2">{update.title}</h4>
-                          <p className="text-gray-600">{update.content}</p>
-                          {update.image && (
-                            <img 
-                              src={update.image} 
-                              alt={update.title}
-                              className="mt-3 rounded-lg w-full max-w-md h-48 object-cover"
-                            />
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 text-center py-8">Aucune mise à jour pour le moment.</p>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === 'donors' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <span className="font-medium">Ahmed M.</span>
-                      <span className="text-primary-600 font-semibold">500 DH</span>
-                      <span className="text-sm text-gray-500">Il y a 2 jours</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <span className="font-medium">Fatima B.</span>
-                      <span className="text-primary-600 font-semibold">200 DH</span>
-                      <span className="text-sm text-gray-500">Il y a 3 jours</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <span className="font-medium text-gray-500">Anonyme</span>
-                      <span className="text-primary-600 font-semibold">200 DH</span>
-                      <span className="text-sm text-gray-500">Il y a 4 jours</span>
-                    </div>
-                    <p className="text-center text-sm text-gray-500 mt-4">
-                      + {Math.max(0, project.donorsCount - 3)} autres donateurs
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Link to={`/donate/${project.id}`}>
+              <Button size="lg" fullWidth className="flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined">favorite</span>
+                {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
+              </Button>
+            </Link>
           </div>
+        </div>
 
-          {/* Sidebar */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              {/* Progress Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <ProgressBar percentage={percentage} size="lg" showLabel />
-                <div className="mt-4">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {formatCurrency(project.raisedAmount)}
-                    </span>
-                    <span className="text-gray-500">
-                      sur {formatCurrency(project.goalAmount)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{percentage}% financé</p>
-                </div>
+        {/* About Section */}
+        <div className="space-y-4">
+          <h3 className="text-text-primary dark:text-white text-xl font-bold leading-tight">
+            {language === 'ar' ? 'عن هذا المشروع' : language === 'fr' ? 'À propos de ce projet' : 'About this project'}
+          </h3>
+          <p className="text-text-secondary dark:text-text-white/80 text-base font-normal leading-relaxed">
+            {getLocalizedText(project.description)}
+          </p>
+          <p className="text-text-secondary dark:text-text-white/80 text-base font-normal leading-relaxed">
+            {getLocalizedText(project.description2)}
+          </p>
+        </div>
 
-                <div className="flex items-center justify-between mt-4 py-4 border-t border-gray-100">
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-gray-900">{project.donorsCount}</p>
-                    <p className="text-sm text-gray-500">donateurs</p>
-                  </div>
-                  {isActive ? (
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-gray-900">{project.daysLeft}</p>
-                      <p className="text-sm text-gray-500">jours restants</p>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-gray-900">{formatDate(project.endDate)}</p>
-                      <p className="text-sm text-gray-500">date de fin</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6">
-                  {renderDonationButton()}
-                </div>
-
-                {/* Share buttons */}
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-700 mb-3">Partager ce projet</p>
-                  <div className="flex space-x-3">
-                    <button 
-                      onClick={() => handleShare('whatsapp')}
-                      className="flex-1 flex items-center justify-center py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => handleShare('facebook')}
-                      className="flex-1 flex items-center justify-center py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Facebook className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => handleShare('copy')}
-                      className="flex-1 flex items-center justify-center py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      <Copy className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Association Info Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-primary-500" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">Organisé par</p>
-                    <p className="text-primary-600">Association Espoir</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-green-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Association vérifiée</span>
-                </div>
-              </div>
+        {/* Gallery Section */}
+        <div className="pt-4">
+          <h3 className="text-text-primary dark:text-white text-lg font-bold leading-tight mb-4">
+            {language === 'ar' ? 'المجتمع والتقدم' : language === 'fr' ? 'Communauté et Progrès' : 'Community & Progress'}
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="aspect-square rounded-lg overflow-hidden">
+              <img
+                src={project.gallery[0]}
+                alt="Community"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="aspect-square rounded-lg overflow-hidden">
+              <img
+                src={project.gallery[1]}
+                alt="Construction"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+            <div className="col-span-2 h-48 rounded-lg overflow-hidden">
+              <img
+                src={project.gallery[2]}
+                alt="Landscape"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
             </div>
           </div>
         </div>
 
-        {/* Related Projects */}
-        {relatedProjects.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Projets similaires</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {relatedProjects.map((p) => (
-                <ProjectCard key={p.id} project={p} variant="compact" />
-              ))}
-            </div>
+        {/* Project Progress Updates */}
+        <div className="flex flex-col gap-4 py-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-text-primary dark:text-white text-lg font-bold">
+              {language === 'ar' ? 'آخر التحديثات' : language === 'fr' ? 'Dernières Mises à Jour' : 'Latest Updates'}
+            </h3>
+            <span className="text-primary text-sm font-bold cursor-pointer hover:underline">
+              {language === 'ar' ? 'عرض الكل' : language === 'fr' ? 'Voir Tout' : 'View All'}
+            </span>
           </div>
-        )}
+          {project.updates.map((update) => (
+            <div
+              key={update.id}
+              className="flex gap-4 p-4 rounded-xl bg-white dark:bg-white/5 border border-primary/10"
+            >
+              <div className="flex-shrink-0 size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined">{update.icon}</span>
+              </div>
+              <div>
+                <p className="text-xs text-text-muted dark:text-text-white/50">{update.date}</p>
+                <h4 className="font-bold text-text-primary dark:text-white">{getLocalizedText(update.title)}</h4>
+                <p className="text-sm text-text-secondary dark:text-text-white/70">
+                  {getLocalizedText(update.description)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer Action - Transparency */}
+        <div className="py-8 flex flex-col items-center gap-4 text-center">
+          <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
+            <span className="material-symbols-outlined text-4xl">verified_user</span>
+          </div>
+          <h4 className="font-bold text-text-primary dark:text-white text-xl">
+            {language === 'ar' ? '100٪ شفافية' : language === 'fr' ? '100% de Transparence' : '100% Transparency'}
+          </h4>
+          <p className="text-sm text-text-secondary dark:text-text-white/60 px-8 max-w-md">
+            {language === 'ar'
+              ? 'يتم تتبع كل درهم وتدقيقه لضمان الاستفادة المباشرة للمجتمع.'
+              : language === 'fr'
+              ? 'Chaque dirham est suivi et audité pour garantir qu\'il profite directement à la communauté.'
+              : 'Every dirham is tracked and audited to ensure it directly benefits the community.'}
+          </p>
+        </div>
       </div>
-
-      {/* Share Toast */}
-      {showShareToast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-          Lien copié!
-        </div>
-      )}
     </div>
   );
 };

@@ -1,112 +1,131 @@
 import React from 'react';
 
-const ProgressBar = ({ 
-  percentage, 
-  size = 'md', 
-  showLabel = false,
-  className = '',
+// ============================================
+// PROGRESS BAR COMPONENT - Linear progress indicator
+// ============================================
+
+const ProgressBar = ({
+  value = 0,
+  max = 100,
+  size = 'md',
   color = 'primary',
-  animated = true
+  showLabel = false,
+  labelPosition = 'right',
+  className = '',
+  animated = true,
+  striped = false,
+  ...props
 }) => {
-  const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
-  
-  const sizes = {
-    sm: 'h-1.5',
-    md: 'h-2.5',
-    lg: 'h-4',
+  // Calculate percentage
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+
+  // Size classes
+  const sizeClasses = {
+    sm: 'h-1',
+    md: 'h-2',
+    lg: 'h-3',
+    xl: 'h-4',
   };
 
-  const colorStyles = {
-    primary: 'bg-gradient-to-r from-primary-500 to-primary-600',
-    success: 'bg-gradient-to-r from-success-500 to-success-600',
-    warning: 'bg-gradient-to-r from-warning-500 to-warning-600',
-    error: 'bg-gradient-to-r from-error-500 to-error-600',
-    secondary: 'bg-gradient-to-r from-secondary-400 to-secondary-500',
+  // Color classes
+  const colorClasses = {
+    primary: 'bg-primary',
+    success: 'bg-success',
+    warning: 'bg-warning',
+    error: 'bg-error',
+    info: 'bg-info',
+    neutral: 'bg-text-muted',
   };
 
-  // Determine color based on percentage if not explicitly set
-  const getBarColor = () => {
-    if (color !== 'primary') return colorStyles[color];
-    if (clampedPercentage >= 100) return colorStyles.success;
-    if (clampedPercentage >= 80) return colorStyles.warning;
-    return colorStyles.primary;
-  };
+  const containerClasses = `
+    w-full bg-bg-teal-wash dark:bg-bg-dark rounded-full overflow-hidden
+    ${sizeClasses[size] || sizeClasses.md}
+    ${className}
+  `.trim().replace(/\s+/g, ' ');
+
+  const fillClasses = `
+    h-full ${colorClasses[color] || colorClasses.primary} rounded-full
+    ${animated ? 'transition-all duration-500 ease-out' : ''}
+    ${striped ? 'progress-striped' : ''}
+  `.trim().replace(/\s+/g, ' ');
+
+  const renderLabel = () => (
+    <span className="text-sm font-semibold text-text-secondary min-w-[40px] text-right">
+      {Math.round(percentage)}%
+    </span>
+  );
 
   return (
-    <div className={`w-full ${className}`}>
-      <div className={`
-        w-full ${sizes[size]} bg-gray-200 rounded-full overflow-hidden
-        ${size === 'lg' ? 'shadow-inner' : ''}
-      `}>
+    <div className={`flex items-center gap-3 ${labelPosition === 'top' || labelPosition === 'bottom' ? 'flex-col' : ''}`}>
+      {showLabel && labelPosition === 'left' && renderLabel()}
+      {showLabel && labelPosition === 'top' && (
+        <div className="flex items-center justify-between w-full">
+          <span className="text-sm text-text-muted">Progress</span>
+          {renderLabel()}
+        </div>
+      )}
+      
+      <div className={containerClasses} {...props}>
         <div
-          className={`
-            ${sizes[size]} ${getBarColor()} rounded-full transition-all duration-700 ease-out-expo
-            ${animated ? 'animate-pulse-slow' : ''}
-          `}
-          style={{ width: `${clampedPercentage}%` }}
+          className={fillClasses}
+          style={{ width: `${percentage}%` }}
           role="progressbar"
-          aria-valuenow={clampedPercentage}
+          aria-valuenow={value}
           aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Progression: ${clampedPercentage}%`}
+          aria-valuemax={max}
         />
       </div>
-      {showLabel && (
-        <div className="flex justify-between items-center mt-1.5">
-          <span className="text-sm font-semibold text-gray-900">
-            {clampedPercentage}%
-          </span>
-          {clampedPercentage >= 100 && (
-            <span className="text-xs font-medium text-success-600">
-              Complété ✓
-            </span>
-          )}
+      
+      {showLabel && labelPosition === 'right' && renderLabel()}
+      {showLabel && labelPosition === 'bottom' && (
+        <div className="flex items-center justify-between w-full">
+          <span className="text-sm text-text-muted">{value} of {max}</span>
+          {renderLabel()}
         </div>
       )}
     </div>
   );
 };
 
-// Circular Progress for different use cases
-export const CircularProgress = ({ 
-  percentage, 
-  size = 60, 
-  strokeWidth = 4,
+// ============================================
+// CIRCULAR PROGRESS - Circular progress indicator
+// ============================================
+
+export const CircularProgress = ({
+  value = 0,
+  max = 100,
+  size = 60,
+  strokeWidth = 6,
   color = 'primary',
-  showPercentage = true,
-  className = ''
+  showLabel = true,
+  className = '',
 }) => {
-  const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (clampedPercentage / 100) * circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  const colors = {
-    primary: '#3B82F6',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    secondary: '#F59E0B',
-  };
-
-  const getColor = () => {
-    if (color !== 'primary') return colors[color];
-    if (clampedPercentage >= 100) return colors.success;
-    if (clampedPercentage >= 80) return colors.warning;
-    return colors.primary;
+  const colorClasses = {
+    primary: 'text-primary',
+    success: 'text-success',
+    warning: 'text-warning',
+    error: 'text-error',
+    info: 'text-info',
+    neutral: 'text-text-muted',
   };
 
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
-      <svg width={size} height={size} className="transform -rotate-90">
+      <svg width={size} height={size} className="-rotate-90">
         {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#E5E7EB"
+          stroke="currentColor"
           strokeWidth={strokeWidth}
+          className="text-bg-teal-wash dark:text-bg-dark"
         />
         {/* Progress circle */}
         <circle
@@ -114,19 +133,154 @@ export const CircularProgress = ({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={getColor()}
+          stroke="currentColor"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-700 ease-out-expo"
+          className={`${colorClasses[color] || colorClasses.primary} transition-all duration-500 ease-out`}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset,
+          }}
         />
       </svg>
-      {showPercentage && (
-        <span className="absolute text-sm font-semibold text-gray-900">
-          {Math.round(clampedPercentage)}%
-        </span>
+      {showLabel && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-sm font-semibold text-text-primary dark:text-white">
+            {Math.round(percentage)}%
+          </span>
+        </div>
       )}
+    </div>
+  );
+};
+
+// ============================================
+// STEPPER PROGRESS - Multi-step progress indicator
+// ============================================
+
+export const StepperProgress = ({
+  steps,
+  currentStep,
+  orientation = 'horizontal',
+  className = '',
+}) => {
+  const isHorizontal = orientation === 'horizontal';
+
+  return (
+    <div className={`${isHorizontal ? 'flex items-center' : 'flex flex-col'} ${className}`}>
+      {steps.map((step, index) => {
+        const isCompleted = index < currentStep;
+        const isCurrent = index === currentStep;
+        const isPending = index > currentStep;
+
+        return (
+          <React.Fragment key={index}>
+            {/* Step indicator */}
+            <div className={`flex ${isHorizontal ? 'flex-col items-center' : 'flex-row items-center gap-3'}`}>
+              {/* Step circle */}
+              <div
+                className={`
+                  w-8 h-8 rounded-full flex items-center justify-center
+                  text-sm font-semibold transition-all duration-300
+                  ${isCompleted
+                    ? 'bg-success text-white'
+                    : isCurrent
+                    ? 'bg-primary text-white ring-4 ring-primary/20'
+                    : 'bg-bg-teal-wash text-text-muted'
+                  }
+                `}
+              >
+                {isCompleted ? (
+                  <span className="material-symbols-outlined text-lg">check</span>
+                ) : (
+                  index + 1
+                )}
+              </div>
+              
+              {/* Step label */}
+              {step.label && (
+                <span
+                  className={`
+                    text-xs font-medium mt-1 text-center max-w-[80px]
+                    ${isCompleted || isCurrent ? 'text-text-primary dark:text-white' : 'text-text-muted'}
+                  `}
+                >
+                  {step.label}
+                </span>
+              )}
+            </div>
+
+            {/* Connector line */}
+            {index < steps.length - 1 && (
+              <div
+                className={`
+                  ${isHorizontal ? 'flex-1 h-0.5 mx-2' : 'w-0.5 h-8 ml-4 my-1'}
+                  ${isCompleted ? 'bg-success' : 'bg-bg-teal-wash'}
+                `}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
+// ============================================
+// SEGMENTED PROGRESS - Segmented progress bar
+// ============================================
+
+export const SegmentedProgress = ({
+  segments,
+  activeSegment,
+  className = '',
+}) => {
+  return (
+    <div className={`flex gap-1 ${className}`}>
+      {segments.map((segment, index) => (
+        <div
+          key={index}
+          className={`
+            flex-1 h-2 rounded-full transition-all duration-300
+            ${index <= activeSegment ? 'bg-primary' : 'bg-bg-teal-wash'}
+          `}
+          title={segment.label}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ============================================
+// GOAL PROGRESS - Progress with goal display
+// ============================================
+
+export const GoalProgress = ({
+  current,
+  goal,
+  size = 'md',
+  showAmounts = true,
+  className = '',
+}) => {
+  const percentage = Math.min((current / goal) * 100, 100);
+
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {showAmounts && (
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-semibold text-primary">
+            {current.toLocaleString()} MAD
+          </span>
+          <span className="text-text-muted">
+            {goal.toLocaleString()} MAD
+          </span>
+        </div>
+      )}
+      <ProgressBar value={current} max={goal} size={size} color="primary" />
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium text-text-secondary">{Math.round(percentage)}% raised</span>
+        <span className="text-text-muted">{Math.max(goal - current, 0).toLocaleString()} MAD to go</span>
+      </div>
     </div>
   );
 };

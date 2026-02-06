@@ -1,189 +1,259 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Heart, User, Plus } from 'lucide-react';
+import React from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+import Button from '../components/Button';
+
+// ============================================
+// ADMIN DONOR DETAIL PAGE - Donor Profile & CRM
+// ============================================
 
 const AdminDonorDetail = () => {
   const { id } = useParams();
-  const { getDonorById, getDonationsByDonor, formatCurrency, formatDate, getStatusLabel, getStatusColor, language } = useApp();
-  const [notes, setNotes] = useState('');
+  const { currentLanguage } = useApp();
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
-      notFound: 'المتبرع غير موجود',
-      backToDonors: 'العودة للمتبرعين',
-      contactWhatsApp: 'تواصل عبر واتساب',
-      donorSince: 'متبرع منذ',
-      whatsapp: 'واتساب',
-      email: 'البريد الإلكتروني',
+      back: 'العودة للمتبرعين',
+      profile: 'ملف المتبرع',
       totalDonated: 'إجمالي التبرعات',
-      donationsMade: 'عدد التبرعات',
-      internalNotes: 'ملاحظات داخلية',
-      addNote: '+ إضافة ملاحظة',
+      donorSince: 'متبرع منذ',
+      call: 'اتصال',
+      email: 'بريد إلكتروني',
+      whatsapp: 'واتساب',
       donationHistory: 'سجل التبرعات',
-      noDonations: 'لا توجد تبرعات',
-      notePlaceholder: 'أضف ملاحظة عن هذا المتبرع...',
+      viewAll: 'عرض الكل',
+      communicationLog: 'سجل التواصل',
+      whatsappOutbound: 'واتساب صادر',
+      sendMessage: 'إرسال رسالة واتساب',
+      success: 'نجاح',
+      months: [
+        'يناير', 'فبراير', 'مارس', 'إبريل', 'مايو', 'يونيو',
+        'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+      ],
     },
     fr: {
-      notFound: 'Donateur non trouvé',
-      backToDonors: 'Retour aux donateurs',
-      contactWhatsApp: 'Contacter sur WhatsApp',
+      back: 'Retour aux Donateurs',
+      profile: 'Profil du Donateur',
+      totalDonated: 'Total Donné',
       donorSince: 'Donateur depuis',
-      whatsapp: 'WhatsApp',
+      call: 'Appeler',
       email: 'Email',
-      totalDonated: 'Total donné',
-      donationsMade: 'Dons effectués',
-      internalNotes: 'Notes internes',
-      addNote: '+ Ajouter une note',
-      donationHistory: 'Historique des dons',
-      noDonations: 'Aucun don trouvé',
-      notePlaceholder: 'Ajouter une note sur ce donateur...',
+      whatsapp: 'WhatsApp',
+      donationHistory: 'Historique des Dons',
+      viewAll: 'Voir Tout',
+      communicationLog: 'Journal de Communication',
+      whatsappOutbound: 'WhatsApp Sortant',
+      sendMessage: 'Envoyer Message WhatsApp',
+      success: 'SUCCÈS',
+      months: [
+        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+      ],
     },
     en: {
-      notFound: 'Donor not found',
-      backToDonors: 'Back to Donors',
-      contactWhatsApp: 'Contact on WhatsApp',
-      donorSince: 'Donor since',
-      whatsapp: 'WhatsApp',
-      email: 'Email',
+      back: 'Back to Donors',
+      profile: 'Donor Profile',
       totalDonated: 'Total Donated',
-      donationsMade: 'Donations Made',
-      internalNotes: 'Internal Notes',
-      addNote: '+ Add Note',
+      donorSince: 'Donor since',
+      call: 'Call',
+      email: 'Email',
+      whatsapp: 'WhatsApp',
       donationHistory: 'Donation History',
-      noDonations: 'No donations found',
-      notePlaceholder: 'Add a note about this donor...',
+      viewAll: 'View All',
+      communicationLog: 'Communication Log',
+      whatsappOutbound: 'WhatsApp Outbound',
+      sendMessage: 'Send WhatsApp Message',
+      success: 'SUCCESS',
+      months: [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ],
     },
-  }[language] || {};
+  };
 
-  const donor = getDonorById(id);
-  const donations = getDonationsByDonor(id);
-  const isRTL = language === 'ar';
+  const t = translations[currentLanguage.code] || translations.en;
 
-  if (!donor) {
-    return (
-      <div className="text-center py-12" dir={isRTL ? 'rtl' : 'ltr'}>
-        <p className="text-gray-500">{t.notFound}</p>
-        <Link to="/admin/donateurs" className="btn-primary mt-4 inline-block">
-          {t.backToDonors}
-        </Link>
-      </div>
-    );
-  }
+  // Mock donor data
+  const donor = {
+    id: parseInt(id) || 1,
+    name: 'Jean Dupont',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+    email: 'jean.dupont@email.com',
+    phone: '+33 6 12 34 56 78',
+    totalDonated: 5420,
+    donorSince: '2022-01-12',
+    tier: 'gold',
+  };
+
+  // Mock donation history
+  const donationHistory = [
+    { id: 1, amount: 500, project: 'Annual Gala 2023', date: '2023-10-24', status: 'success' },
+    { id: 2, amount: 1200, project: 'Winter Shelter Drive', date: '2023-01-05', status: 'success' },
+    { id: 3, amount: 150, project: 'Monthly Subscription', date: '2022-12-01', status: 'success' },
+  ];
+
+  // Mock communication log
+  const communications = [
+    {
+      id: 1,
+      type: 'whatsapp',
+      direction: 'outbound',
+      message: 'Bonjour Jean, merci encore pour votre don généreux pour le Gala de l\'espoir. Nous aimerions vous inviter à notre prochaine réunion de...',
+      date: 'Yesterday, 14:20',
+      read: true,
+    },
+    {
+      id: 2,
+      type: 'whatsapp',
+      direction: 'outbound',
+      message: 'Merci pour votre soutien! Votre reçu fiscal est disponible sur votre espace personnel.',
+      date: 'Oct 24, 2023',
+      read: true,
+    },
+  ];
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = t.months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const getProjectIcon = (project) => {
+    if (project.includes('Gala')) return 'payments';
+    if (project.includes('Winter')) return 'volunteer_activism';
+    if (project.includes('Subscription')) return 'footprint';
+    return 'payments';
+  };
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-        <Link to="/admin/donateurs" className="p-2 hover:bg-gray-100 rounded-lg">
-          <ArrowLeft className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{donor.name}</h1>
+    <div className="max-w-2xl mx-auto space-y-6 pb-8">
+      {/* Back Button */}
+      <Link
+        to="/admin/donors"
+        className="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors"
+      >
+        <span className="material-symbols-outlined">arrow_back</span>
+        <span>{t.back}</span>
+      </Link>
+
+      {/* Profile Header */}
+      <div className="flex flex-col items-center gap-4 pt-2">
+        <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white dark:border-slate-800 shadow-lg"
+          style={{ backgroundImage: `url('${donor.avatar}')` }}
+        />
+        <div className="text-center">
+          <h1 className="text-text-primary dark:text-white text-2xl font-bold leading-tight">{donor.name}</h1>
+          <p className="text-primary font-bold text-xl leading-normal mt-1">
+            €{donor.totalDonated.toLocaleString()}.00 {t.totalDonated}
+          </p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            {t.donorSince} {formatDate(donor.donorSince)}
+          </p>
         </div>
-        <a
+      </div>
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-3 gap-4">
+        <button className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors">
+          <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
+            <span className="material-symbols-outlined text-primary">call</span>
+          </div>
+          <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.call}</p>
+        </button>
+        <a 
+          href={`mailto:${donor.email}`}
+          className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors"
+        >
+          <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
+            <span className="material-symbols-outlined text-primary">mail</span>
+          </div>
+          <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.email}</p>
+        </a>
+        <a 
           href={`https://wa.me/${donor.phone.replace(/\D/g, '')}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 w-full sm:w-auto"
+          className="flex flex-col items-center gap-2 bg-white dark:bg-slate-800/40 p-3 rounded-2xl shadow-sm cursor-pointer border border-slate-100 dark:border-slate-800 hover:border-primary/30 transition-colors"
         >
-          <MessageCircle className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-          {t.contactWhatsApp}
+          <div className="rounded-full bg-primary/10 dark:bg-primary/20 p-3">
+            <span className="material-symbols-outlined text-primary">chat</span>
+          </div>
+          <p className="text-text-primary dark:text-slate-100 text-xs font-semibold">{t.whatsapp}</p>
         </a>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Info Card */}
-        <div>
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <div className={`flex items-center gap-4 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-8 h-8 text-primary-600" />
-              </div>
-              <div className={isRTL ? 'text-right' : ''}>
-                <h2 className="text-xl font-semibold">{donor.name}</h2>
-                <p className="text-gray-500">{t.donorSince} {formatDate(donor.memberSince)}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className={isRTL ? 'text-right' : ''}>
-                <p className="text-sm text-gray-500">{t.whatsapp}</p>
-                <a 
-                  href={`https://wa.me/${donor.phone.replace(/\D/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-600 hover:underline"
-                >
-                  {donor.phone}
-                </a>
-              </div>
-              <div className={isRTL ? 'text-right' : ''}>
-                <p className="text-sm text-gray-500">{t.email}</p>
-                <a href={`mailto:${donor.email}`} className="text-primary-600 hover:underline break-all">
-                  {donor.email}
-                </a>
-              </div>
-              <hr />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xl sm:text-2xl font-bold text-primary-600">{formatCurrency(donor.totalDonated)}</p>
-                  <p className="text-sm text-gray-600">{t.totalDonated}</p>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xl sm:text-2xl font-bold text-primary-600">{donor.donationCount}</p>
-                  <p className="text-sm text-gray-600">{t.donationsMade}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mt-6">
-            <h3 className="font-semibold text-gray-900 mb-4">{t.internalNotes}</h3>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t.notePlaceholder}
-              rows={4}
-              className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:ring-2 focus:ring-primary-300 outline-none"
-              dir={isRTL ? 'rtl' : 'ltr'}
-            />
-            <button className="mt-3 text-sm text-primary-600 hover:underline">
-              {t.addNote}
-            </button>
-          </div>
+      {/* Donation History */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-text-primary dark:text-white text-xl font-bold">{t.donationHistory}</h2>
+          <Link to="/admin/donations" className="text-primary text-sm font-semibold hover:underline">
+            {t.viewAll}
+          </Link>
         </div>
 
-        {/* Donations History */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">{t.donationHistory}</h3>
-            <div className="space-y-3">
-              {donations.map((donation) => (
-                <div key={donation.id} className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg gap-3 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                  <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Heart className="w-5 h-5 text-primary-600" />
-                    </div>
-                    <div className={isRTL ? 'text-right' : ''}>
-                      <p className="font-medium text-gray-900">{donation.projectName}</p>
-                      <p className="text-sm text-gray-500">{formatDate(donation.date)}</p>
-                    </div>
-                  </div>
-                  <div className={`text-left sm:text-right ${isRTL ? 'text-right sm:text-left' : ''}`}>
-                    <p className="font-bold text-primary-600">{formatCurrency(donation.amount)}</p>
-                    <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${getStatusColor(donation.status)}`}>
-                      {getStatusLabel(donation.status)}
-                    </span>
-                  </div>
+        <Card padding="none" className="overflow-hidden">
+          {donationHistory.map((donation, index) => (
+            <div
+              key={donation.id}
+              className={`flex items-center gap-4 px-4 min-h-[72px] py-3 justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
+                index !== 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="text-primary flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12">
+                  <span className="material-symbols-outlined">{getProjectIcon(donation.project)}</span>
                 </div>
-              ))}
-              {donations.length === 0 && (
-                <p className="text-gray-500 text-center py-8">{t.noDonations}</p>
-              )}
+                <div className="flex flex-col justify-center">
+                  <p className="text-text-primary dark:text-white text-base font-bold">€{donation.amount.toFixed(2)}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">{donation.project}</p>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-slate-400 text-[10px] mb-1">{formatDate(donation.date)}</p>
+                <Badge variant="success" size="sm" className="text-[10px]">{t.success}</Badge>
+              </div>
             </div>
-          </div>
+          ))}
+        </Card>
+      </div>
+
+      {/* Communication Log */}
+      <div>
+        <h2 className="text-text-primary dark:text-white text-xl font-bold mb-4">{t.communicationLog}</h2>
+
+        <div className="space-y-4">
+          {communications.map((comm) => (
+            <Card key={comm.id} padding="md" className="relative">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-lg">chat_bubble</span>
+                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{t.whatsappOutbound}</span>
+                </div>
+                <span className="text-[10px] text-slate-400">{comm.date}</span>
+              </div>
+              <p className="text-sm text-slate-700 dark:text-slate-300 italic">"{comm.message}"</p>
+              {comm.read && (
+                <div className="mt-2 flex items-center justify-end">
+                  <span className="material-symbols-outlined text-primary text-sm">done_all</span>
+                </div>
+              )}
+            </Card>
+          ))}
+
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon="send"
+            className="shadow-lg mt-4"
+          >
+            {t.sendMessage}
+          </Button>
         </div>
       </div>
     </div>

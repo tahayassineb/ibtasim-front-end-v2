@@ -1,483 +1,264 @@
-import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, ChevronDown, Eye, Plus, Trash2, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import React from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import ProgressBar from '../components/ProgressBar';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+import Button from '../components/Button';
+
+// ============================================
+// ADMIN PROJECT DETAIL PAGE - Project Overview
+// ============================================
 
 const AdminProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { 
-    getProjectById, 
-    getDonationsByProject, 
-    formatCurrency, 
-    formatDate, 
-    formatRelativeTime,
-    getStatusLabel,
-    getStatusColor,
-    updateProject,
-    deleteProject,
-    language
-  } = useApp();
+  const { currentLanguage } = useApp();
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
-      notFound: 'المشروع غير موجود',
-      backToProjects: 'العودة للمشاريع',
-      changeStatus: 'تغيير الحالة',
-      noChangeAvailable: 'لا يوجد تغيير متاح',
-      markAs: 'وضع علامة كـ',
-      edit: 'تعديل',
-      collected: 'المبلغ المحصل',
-      donors: 'المتبرعون',
-      progress: 'التقدم',
-      daysLeft: 'الأيام المتبقية',
-      end: 'النهاية',
+      back: 'العودة للمشاريع',
+      edit: 'تعديل المشروع',
+      delete: 'حذف المشروع',
       overview: 'نظرة عامة',
       donations: 'التبرعات',
-      updates: 'التحديثات',
-      settings: 'الإعدادات',
-      publicPreview: 'المعاينة العامة',
-      viewOnSite: 'عرض على الموقع',
-      donationList: 'قائمة التبرعات',
-      all: 'الكل',
-      pending: 'قيد الانتظار',
-      verified: 'تم التحقق',
+      gallery: 'معرض الصور',
+      status: 'الحالة',
+      category: 'التصنيف',
+      goal: 'الهدف',
+      raised: 'تم جمعه',
+      donors: 'المتبرعون',
+      daysLeft: 'الأيام المتبقية',
+      description: 'الوصف',
+      recentDonations: 'أحدث التبرعات',
       donor: 'المتبرع',
       amount: 'المبلغ',
-      method: 'الطريقة',
-      status: 'الحالة',
       date: 'التاريخ',
-      actions: 'إجراءات',
-      view: 'عرض',
-      publishedUpdates: 'التحديثات المنشورة',
-      addUpdate: 'إضافة تحديث',
-      noUpdates: 'لا توجد تحديثات لهذا المشروع',
-      dangerZone: 'منطقة الخطر',
-      deleteWarning: 'الحذف نهائي. سيتم الاحتفاظ بالتبرعات المرتبطة في السجل.',
-      deleteProject: 'حذف المشروع',
-      confirmDelete: 'تأكيد الحذف',
-      deleteConfirmText: 'هل أنت متأكد من حذف هذا المشروع؟ هذا الإجراء لا يمكن التراجع عنه.',
-      donationsKept: 'التبرعات المرتبطة سيتم الاحتفاظ بها في السجل.',
-      cancel: 'إلغاء',
-      deletePermanently: 'حذف نهائي',
-      card: 'بطاقة',
-      transfer: 'تحويل بنكي',
-      from: 'من',
-      goal: 'الهدف',
+      noDonations: 'لا توجد تبرعات بعد',
+      confirmDelete: 'هل أنت متأكد من حذف هذا المشروع؟',
     },
     fr: {
-      notFound: 'Projet non trouvé',
-      backToProjects: 'Retour aux projets',
-      changeStatus: 'Changer le statut',
-      noChangeAvailable: 'Aucun changement disponible',
-      markAs: 'Marquer comme',
-      edit: 'Modifier',
-      collected: 'Montant collecté',
-      donors: 'Nombre de donateurs',
-      progress: 'Progression',
-      daysLeft: 'Jours restants',
-      end: 'Fin',
+      back: 'Retour aux Projets',
+      edit: 'Modifier le Projet',
+      delete: 'Supprimer le Projet',
       overview: 'Aperçu',
       donations: 'Dons',
-      updates: 'Mises à jour',
-      settings: 'Paramètres',
-      publicPreview: 'Aperçu public',
-      viewOnSite: 'Voir sur le site',
-      donationList: 'Liste des dons',
-      all: 'Tous',
-      pending: 'En attente',
-      verified: 'Vérifiés',
+      gallery: 'Galerie',
+      status: 'Statut',
+      category: 'Catégorie',
+      goal: 'Objectif',
+      raised: 'Collecté',
+      donors: 'Donateurs',
+      daysLeft: 'Jours Restants',
+      description: 'Description',
+      recentDonations: 'Dons Récents',
       donor: 'Donateur',
       amount: 'Montant',
-      method: 'Méthode',
-      status: 'Statut',
       date: 'Date',
-      actions: 'Actions',
-      view: 'Voir',
-      publishedUpdates: 'Mises à jour publiées',
-      addUpdate: 'Ajouter une mise à jour',
-      noUpdates: 'Aucune mise à jour pour ce projet',
-      dangerZone: 'Zone de danger',
-      deleteWarning: 'La suppression est irréversible. Les dons associés seront conservés dans l\'historique.',
-      deleteProject: 'Supprimer ce projet',
-      confirmDelete: 'Confirmer la suppression',
-      deleteConfirmText: 'Êtes-vous sûr de vouloir supprimer ce projet? Cette action est irréversible.',
-      donationsKept: 'Les dons associés seront conservés dans l\'historique.',
-      cancel: 'Annuler',
-      deletePermanently: 'Supprimer définitivement',
-      card: 'Carte',
-      transfer: 'Virement',
-      from: 'sur',
-      goal: 'Objectif',
+      noDonations: 'Aucun don pour l\'instant',
+      confirmDelete: 'Êtes-vous sûr de vouloir supprimer ce projet ?',
     },
     en: {
-      notFound: 'Project not found',
-      backToProjects: 'Back to Projects',
-      changeStatus: 'Change Status',
-      noChangeAvailable: 'No change available',
-      markAs: 'Mark as',
-      edit: 'Edit',
-      collected: 'Amount Collected',
-      donors: 'Donors',
-      progress: 'Progress',
-      daysLeft: 'Days Left',
-      end: 'End',
+      back: 'Back to Projects',
+      edit: 'Edit Project',
+      delete: 'Delete Project',
       overview: 'Overview',
       donations: 'Donations',
-      updates: 'Updates',
-      settings: 'Settings',
-      publicPreview: 'Public Preview',
-      viewOnSite: 'View on Site',
-      donationList: 'Donation List',
-      all: 'All',
-      pending: 'Pending',
-      verified: 'Verified',
+      gallery: 'Gallery',
+      status: 'Status',
+      category: 'Category',
+      goal: 'Goal',
+      raised: 'Raised',
+      donors: 'Donors',
+      daysLeft: 'Days Left',
+      description: 'Description',
+      recentDonations: 'Recent Donations',
       donor: 'Donor',
       amount: 'Amount',
-      method: 'Method',
-      status: 'Status',
       date: 'Date',
-      actions: 'Actions',
-      view: 'View',
-      publishedUpdates: 'Published Updates',
-      addUpdate: 'Add Update',
-      noUpdates: 'No updates for this project',
-      dangerZone: 'Danger Zone',
-      deleteWarning: 'Deletion is irreversible. Associated donations will be kept in history.',
-      deleteProject: 'Delete Project',
-      confirmDelete: 'Confirm Deletion',
-      deleteConfirmText: 'Are you sure you want to delete this project? This action cannot be undone.',
-      donationsKept: 'Associated donations will be kept in history.',
-      cancel: 'Cancel',
-      deletePermanently: 'Delete Permanently',
-      card: 'Card',
-      transfer: 'Bank Transfer',
-      from: 'of',
-      goal: 'Goal',
+      noDonations: 'No donations yet',
+      confirmDelete: 'Are you sure you want to delete this project?',
     },
-  }[language] || {};
-
-  const [activeTab, setActiveTab] = useState('overview');
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  const project = getProjectById(id);
-  const donations = getDonationsByProject(id);
-  const isRTL = language === 'ar';
-
-  if (!project) {
-    return (
-      <div className="text-center py-12" dir={isRTL ? 'rtl' : 'ltr'}>
-        <p className="text-gray-500">{t.notFound}</p>
-        <Link to="/admin/projets" className="btn-primary mt-4 inline-block">
-          {t.backToProjects}
-        </Link>
-      </div>
-    );
-  }
-
-  const percentage = Math.round((project.raisedAmount / project.goalAmount) * 100);
-
-  const handleStatusChange = (newStatus) => {
-    updateProject(project.id, { status: newStatus });
-    setShowStatusDropdown(false);
   };
 
-  const handleDelete = () => {
-    deleteProject(project.id);
-    navigate('/admin/projets');
+  const t = translations[currentLanguage.code] || translations.en;
+
+  // Mock project data
+  const project = {
+    id: parseInt(id) || 1,
+    title: 'Clean Water Initiative',
+    category: 'Water',
+    status: 'active',
+    goal: 50000,
+    raised: 32500,
+    donors: 142,
+    daysLeft: 45,
+    description: 'Providing sustainable clean water solutions for rural communities in the Atlas Mountains region. This project aims to install water purification systems and build wells in 10 villages, benefiting over 5,000 residents.',
+    image: 'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800',
+    gallery: [
+      'https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=400',
+      'https://images.unsplash.com/photo-1541544537156-21c5299228d8?w=400',
+      'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400',
+    ],
+    createdAt: '2024-01-15',
   };
 
-  const availableStatuses = {
-    active: ['stopped', 'finished'],
-    funded: ['finished'],
-    stopped: ['active'],
-    finished: [],
-    expired: [],
-  };
-
-  const tabs = [
-    { key: 'overview', label: t.overview },
-    { key: 'donations', label: `${t.donations} (${donations.length})` },
-    { key: 'updates', label: `${t.updates} (${project.updates?.length || 0})` },
-    { key: 'settings', label: t.settings },
+  // Mock donations for this project
+  const donations = [
+    { id: 1, donor: 'Mohammed Alami', amount: 5000, date: '2024-02-01', status: 'completed' },
+    { id: 2, donor: 'Sara Fassi', amount: 1200, date: '2024-01-28', status: 'completed' },
+    { id: 3, donor: 'Yassine Kabbaj', amount: 850, date: '2024-01-25', status: 'completed' },
+    { id: 4, donor: 'Leila Benani', amount: 2500, date: '2024-01-20', status: 'completed' },
+    { id: 5, donor: 'Amine Jilali', amount: 10000, date: '2024-01-18', status: 'completed' },
   ];
 
+  const progress = Math.min((project.raised / project.goal) * 100, 100);
+
+  const handleDelete = () => {
+    if (window.confirm(t.confirmDelete)) {
+      // Delete logic here
+      navigate('/admin/projects');
+    }
+  };
+
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <Link to="/admin/projets" className="p-2 hover:bg-gray-100 rounded-lg">
-            <ArrowLeft className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/admin/projects"
+            className="p-2 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
           </Link>
-          <div className={isRTL ? 'text-right' : ''}>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{project.title}</h1>
-            <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${getStatusColor(project.status)}`}>
-              {getStatusLabel(project.status)}
-            </span>
-          </div>
+          <h1 className="text-2xl font-bold text-text-primary dark:text-white">{project.title}</h1>
         </div>
-        <div className={`flex items-center gap-3 w-full sm:w-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className="relative flex-1 sm:flex-none">
-            <button
-              onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-              className="flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              {t.changeStatus}
-              <ChevronDown className={`w-4 h-4 ${isRTL ? 'mr-2' : 'ml-2'}`} />
-            </button>
-            {showStatusDropdown && (
-              <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10`}>
-                {availableStatuses[project.status]?.map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => handleStatusChange(status)}
-                    className={`block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 capitalize ${isRTL ? 'text-right' : 'text-left'}`}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="md"
+            icon="edit"
+            onClick={() => navigate(`/admin/projects/${id}/edit`)}
+          >
+            {t.edit}
+          </Button>
+          <Button
+            variant="danger"
+            size="md"
+            icon="delete"
+            onClick={handleDelete}
+          >
+            {t.delete}
+          </Button>
+        </div>
+      </div>
+
+      {/* Project Image */}
+      <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden">
+        <img
+          src={project.image}
+          alt={project.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute bottom-4 left-4 right-4">
+          <Badge variant={project.status === 'active' ? 'success' : 'neutral'} size="lg">
+            {project.status === 'active' ? 'Active' : project.status}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card padding="lg">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.goal}</p>
+          <p className="text-2xl font-bold text-text-primary dark:text-white">{project.goal.toLocaleString()} DH</p>
+        </Card>
+        <Card padding="lg">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.raised}</p>
+          <p className="text-2xl font-bold text-primary">{project.raised.toLocaleString()} DH</p>
+        </Card>
+        <Card padding="lg">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.donors}</p>
+          <p className="text-2xl font-bold text-text-primary dark:text-white">{project.donors}</p>
+        </Card>
+        <Card padding="lg">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t.daysLeft}</p>
+          <p className="text-2xl font-bold text-text-primary dark:text-white">{project.daysLeft}</p>
+        </Card>
+      </div>
+
+      {/* Progress Bar */}
+      <Card padding="lg">
+        <div className="flex justify-between mb-2">
+          <span className="text-sm font-medium text-text-primary dark:text-white">{Math.round(progress)}% {t.raised}</span>
+          <span className="text-sm text-slate-500">{t.goal}: {project.goal.toLocaleString()} DH</span>
+        </div>
+        <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Description & Gallery */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Description */}
+          <Card padding="lg">
+            <h2 className="text-lg font-bold text-text-primary dark:text-white mb-4">{t.description}</h2>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{project.description}</p>
+          </Card>
+
+          {/* Gallery */}
+          <Card padding="lg">
+            <h2 className="text-lg font-bold text-text-primary dark:text-white mb-4">{t.gallery}</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {project.gallery.map((image, index) => (
+                <div key={index} className="aspect-square rounded-xl overflow-hidden">
+                  <img
+                    src={image}
+                    alt={`Gallery ${index + 1}`}
+                    className="w-full h-full object-cover hover:scale-110 transition-transform"
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column - Donations */}
+        <div>
+          <Card padding="lg">
+            <h2 className="text-lg font-bold text-text-primary dark:text-white mb-4">{t.recentDonations}</h2>
+            {donations.length > 0 ? (
+              <div className="space-y-4">
+                {donations.map((donation) => (
+                  <div
+                    key={donation.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50"
                   >
-                    {t.markAs} {getStatusLabel(status)}
-                  </button>
+                    <div>
+                      <p className="font-medium text-text-primary dark:text-white text-sm">{donation.donor}</p>
+                      <p className="text-xs text-slate-400">{donation.date}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-primary text-sm">{donation.amount.toLocaleString()} DH</p>
+                      <Badge variant="success" size="sm" className="text-[10px]">Completed</Badge>
+                    </div>
+                  </div>
                 ))}
-                {availableStatuses[project.status]?.length === 0 && (
-                  <p className="px-4 py-2 text-sm text-gray-500">{t.noChangeAvailable}</p>
-                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-slate-500">{t.noDonations}</p>
               </div>
             )}
-          </div>
-          <Link
-            to={`/admin/projets/${id}/modifier`}
-            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-          >
-            <Edit className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-            {t.edit}
-          </Link>
+          </Card>
         </div>
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-600">{t.collected}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(project.raisedAmount)}</p>
-          <p className="text-xs sm:text-sm text-gray-500">{t.from} {formatCurrency(project.goalAmount)}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-600">{t.donors}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">{project.donorsCount}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-600">{t.progress}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">{percentage}%</p>
-          <div className="mt-2">
-            <ProgressBar percentage={percentage} size="sm" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <p className="text-sm text-gray-600">{t.daysLeft}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">{project.daysLeft || 0}</p>
-          <p className="text-xs sm:text-sm text-gray-500">{t.end}: {formatDate(project.endDate)}</p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="border-b border-gray-200 overflow-x-auto">
-          <nav className={`flex min-w-max ${isRTL ? 'flex-row-reverse' : ''}`}>
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-4 sm:px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.key
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="p-4 sm:p-6">
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <h3 className="font-semibold text-gray-900">{t.publicPreview}</h3>
-                <Link to={`/projets/${id}`} target="_blank" className="text-primary-600 text-sm hover:underline flex items-center">
-                  <Eye className={`w-4 h-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                  {t.viewOnSite} →
-                </Link>
-              </div>
-              <div className="border border-gray-200 rounded-lg p-4 sm:p-6">
-                <img src={project.mainImage} alt="" className="w-full h-48 sm:h-64 object-cover rounded-lg mb-4" />
-                <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm mb-3">
-                  {project.category}
-                </span>
-                <h4 className="text-lg sm:text-xl font-semibold mb-2">{project.title}</h4>
-                <p className="text-gray-600 mb-4">{project.shortDescription}</p>
-                <div className="prose max-w-none text-gray-700 whitespace-pre-line text-sm sm:text-base">
-                  {project.description}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'donations' && (
-            <div>
-              <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 ${isRTL ? 'sm:flex-row-reverse' : ''}`}>
-                <h3 className="font-semibold text-gray-900">{t.donationList}</h3>
-                <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <button className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">{t.all}</button>
-                  <button className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">{t.pending}</button>
-                  <button className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">{t.verified}</button>
-                </div>
-              </div>
-              
-              {/* Mobile Cards */}
-              <div className="block lg:hidden space-y-3">
-                {donations.map((donation) => (
-                  <div key={donation.id} className={`p-4 bg-gray-50 rounded-lg ${donation.status === 'pending' ? 'border-r-4 border-orange-400' : ''}`}>
-                    <div className={`flex justify-between items-start mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="font-medium text-gray-900">{donation.donorName}</span>
-                      <span className="font-bold text-primary-600">{formatCurrency(donation.amount)}</span>
-                    </div>
-                    <div className={`flex justify-between items-center text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-gray-500">{donation.method === 'card' ? t.card : t.transfer}</span>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(donation.status)}`}>
-                        {getStatusLabel(donation.status)}
-                      </span>
-                    </div>
-                    <p className={`text-xs text-gray-400 mt-2 ${isRTL ? 'text-left' : 'text-right'}`}>{formatRelativeTime(donation.date)}</p>
-                  </div>
-                ))}
-                {donations.length === 0 && (
-                  <p className="text-gray-500 text-center py-8">No donations</p>
-                )}
-              </div>
-
-              {/* Desktop Table */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.donor}</th>
-                      <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.amount}</th>
-                      <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.method}</th>
-                      <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.status}</th>
-                      <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.date}</th>
-                      <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.actions}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {donations.map((donation) => (
-                      <tr key={donation.id} className={donation.status === 'pending' ? 'bg-orange-50' : ''}>
-                        <td className="px-4 py-3">{donation.donorName}</td>
-                        <td className="px-4 py-3 font-medium">{formatCurrency(donation.amount)}</td>
-                        <td className="px-4 py-3 capitalize">{donation.method === 'card' ? t.card : t.transfer}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${getStatusColor(donation.status)}`}>
-                            {donation.status === 'verified' && <CheckCircle className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                            {donation.status === 'pending' && <Clock className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                            {donation.status === 'failed' && <XCircle className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                            {getStatusLabel(donation.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{formatRelativeTime(donation.date)}</td>
-                        <td className="px-4 py-3">
-                          <Link to={`/admin/dons?donation=${donation.id}`} className="text-primary-600 text-sm hover:underline">
-                            {t.view}
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'updates' && (
-            <div>
-              <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <h3 className="font-semibold text-gray-900">{t.publishedUpdates}</h3>
-                <button className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm">
-                  <Plus className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t.addUpdate}
-                </button>
-              </div>
-              <div className="space-y-4">
-                {project.updates?.map((update) => (
-                  <div key={update.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <h4 className="font-medium">{update.title}</h4>
-                      <span className="text-sm text-gray-500">{formatDate(update.date)}</span>
-                    </div>
-                    <p className="text-gray-600 text-sm">{update.content}</p>
-                    {update.image && (
-                      <img src={update.image} alt="" className="mt-3 rounded-lg h-32 object-cover" />
-                    )}
-                  </div>
-                ))}
-                {(!project.updates || project.updates.length === 0) && (
-                  <p className="text-gray-500 text-center py-8">{t.noUpdates}</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-semibold text-yellow-900 mb-2">{t.dangerZone}</h4>
-                <p className="text-yellow-700 text-sm mb-4">
-                  {t.deleteWarning}
-                </p>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                >
-                  <Trash2 className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t.deleteProject}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Delete Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <div className={`flex items-center gap-3 text-red-600 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-lg font-semibold">{t.confirmDelete}</h3>
-            </div>
-            <p className="text-gray-600 mb-4">
-              {t.deleteConfirmText}
-            </p>
-            <p className="text-gray-500 text-sm mb-6">
-              {t.donationsKept}
-            </p>
-            <div className={`flex justify-end gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                {t.cancel}
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-              >
-                {t.deletePermanently}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

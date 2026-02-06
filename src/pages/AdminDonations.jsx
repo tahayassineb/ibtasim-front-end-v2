@@ -1,467 +1,412 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, AlertTriangle, CheckCircle, XCircle, Clock, FileText, Eye } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import Card from '../components/Card';
+import Badge from '../components/Badge';
+
+// ============================================
+// ADMIN DONATIONS PAGE - Donations Management Ledger
+// ============================================
 
 const AdminDonations = () => {
-  const { donations, projects, formatCurrency, formatDate, getStatusLabel, getStatusColor, verifyDonation, rejectDonation, language } = useApp();
-  const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProject, setSelectedProject] = useState('all');
-  const [verificationModal, setVerificationModal] = useState(null);
+  const { currentLanguage } = useApp();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const t = {
+  // Translations
+  const translations = {
     ar: {
-      title: 'إدارة التبرعات',
-      totalThisMonth: 'المجموع هذا الشهر',
-      urgent: 'تبرعات بحاجة للتحقق',
-      all: 'الكل',
-      pending: 'قيد الانتظار',
-      verified: 'تم التحقق',
-      failed: 'فاشلة',
-      allProjects: 'جميع المشاريع',
-      search: 'البحث...',
-      donor: 'المتبرع',
-      project: 'المشروع',
-      amount: 'المبلغ',
-      method: 'الطريقة',
-      reference: 'المرجع',
+      title: 'سجل التبرعات',
+      back: 'عودة',
+      export: 'تصدير',
+      more: 'المزيد',
+      stats: {
+        confirmed: 'مؤكد',
+        pending: 'معلق',
+        rejected: 'مرفوض',
+        total: 'إجمالي الإيرادات',
+      },
+      search: 'البحث برقم الهوية، الاسم أو الهاتف...',
+      dateRange: 'نطاق التاريخ',
       status: 'الحالة',
-      date: 'التاريخ',
-      actions: 'إجراءات',
-      verify: 'تحقق',
-      card: 'بطاقة',
-      transfer: 'تحويل بنكي',
-      anonymous: 'مجهول',
-      noDonations: 'لا توجد تبرعات',
-      verificationTitle: 'التحقق من التبرع',
-      donationInfo: 'معلومات التبرع',
-      receipt: 'الإيصال',
-      checklist: 'قائمة التحقق',
-      amountMatch: 'المبلغ يتطابق',
-      referenceVisible: 'المرجع مرئي',
-      dateRecent: 'التاريخ حديث',
-      accountCorrect: 'الحساب المستلم صحيح',
-      cancel: 'إلغاء',
+      all: 'الكل',
+      project: 'المشروع',
+      recentDonations: 'أحدث التبرعات',
+      bulkActions: 'إجراءات جماعية',
+      confirm: 'تأكيد',
       reject: 'رفض',
-      approve: 'الموافقة على التبرع',
-      noReceipt: 'لا يوجد إيصال',
-      declaredAmount: 'المبلغ المعلن',
-      submissionDate: 'تاريخ التقديم',
-      whatsapp: 'واتساب',
+      view: 'عرض',
+      viewReceipt: 'عرض الإيصال',
+      retry: 'إعادة المعالجة',
+      viewDetails: 'عرض التفاصيل',
+      card: 'بطاقة',
+      bankTransfer: 'تحويل بنكي',
+      cash: 'نقدي',
+      swift: 'سويفت',
     },
     fr: {
-      title: 'Gestion des dons',
-      totalThisMonth: 'Total ce mois',
-      urgent: 'dons en attente de vérification',
-      all: 'Tous',
-      pending: 'En attente',
-      verified: 'Vérifiés',
-      failed: 'Échoués',
-      allProjects: 'Tous les projets',
-      search: 'Rechercher...',
-      donor: 'Donateur',
-      project: 'Projet',
-      amount: 'Montant',
-      method: 'Méthode',
-      reference: 'Référence',
+      title: 'Registre des Dons',
+      back: 'Retour',
+      export: 'Exporter',
+      more: 'Plus',
+      stats: {
+        confirmed: 'Confirmé',
+        pending: 'En Attente',
+        rejected: 'Rejeté',
+        total: 'Revenus Totaux',
+      },
+      search: 'Rechercher ID, Nom ou Téléphone...',
+      dateRange: 'Plage de Dates',
       status: 'Statut',
-      date: 'Date',
-      actions: 'Actions',
-      verify: 'Vérifier',
-      card: 'Carte',
-      transfer: 'Virement',
-      anonymous: 'Anonyme',
-      noDonations: 'Aucun don trouvé',
-      verificationTitle: 'Vérification du don',
-      donationInfo: 'Informations du don',
-      receipt: 'Reçu envoyé',
-      checklist: 'Checklist de vérification',
-      amountMatch: 'Le montant correspond',
-      referenceVisible: 'La référence est visible',
-      dateRecent: 'La date est récente',
-      accountCorrect: 'Le compte destinataire est correct',
-      cancel: 'Annuler',
+      all: 'Tous',
+      project: 'Projet',
+      recentDonations: 'Dons Récents',
+      bulkActions: 'Actions en Masse',
+      confirm: 'Confirmer',
       reject: 'Rejeter',
-      approve: 'Approuver le don',
-      noReceipt: 'Aucun reçu joint',
-      declaredAmount: 'Montant déclaré',
-      submissionDate: 'Date de soumission',
-      whatsapp: 'WhatsApp',
+      view: 'Voir',
+      viewReceipt: 'Voir le Reçu',
+      retry: 'Réessayer',
+      viewDetails: 'Voir Détails',
+      card: 'Carte',
+      bankTransfer: 'Virement Bancaire',
+      cash: 'Espèces',
+      swift: 'Swift',
     },
     en: {
-      title: 'Donation Management',
-      totalThisMonth: 'Total this month',
-      urgent: 'donations pending verification',
-      all: 'All',
-      pending: 'Pending',
-      verified: 'Verified',
-      failed: 'Failed',
-      allProjects: 'All Projects',
-      search: 'Search...',
-      donor: 'Donor',
-      project: 'Project',
-      amount: 'Amount',
-      method: 'Method',
-      reference: 'Reference',
+      title: 'Donations Ledger',
+      back: 'Back',
+      export: 'Export',
+      more: 'More',
+      stats: {
+        confirmed: 'Confirmed',
+        pending: 'Pending',
+        rejected: 'Rejected',
+        total: 'Total Revenue',
+      },
+      search: 'Search ID, Name or Phone...',
+      dateRange: 'Date Range',
       status: 'Status',
-      date: 'Date',
-      actions: 'Actions',
-      verify: 'Verify',
-      card: 'Card',
-      transfer: 'Bank Transfer',
-      anonymous: 'Anonymous',
-      noDonations: 'No donations found',
-      verificationTitle: 'Verify Donation',
-      donationInfo: 'Donation Information',
-      receipt: 'Submitted Receipt',
-      checklist: 'Verification Checklist',
-      amountMatch: 'Amount matches',
-      referenceVisible: 'Reference is visible',
-      dateRecent: 'Date is recent',
-      accountCorrect: 'Recipient account is correct',
-      cancel: 'Cancel',
+      all: 'All',
+      project: 'Project',
+      recentDonations: 'Recent Donations',
+      bulkActions: 'Bulk Actions',
+      confirm: 'Confirm',
       reject: 'Reject',
-      approve: 'Approve Donation',
-      noReceipt: 'No receipt attached',
-      declaredAmount: 'Declared Amount',
-      submissionDate: 'Submission Date',
-      whatsapp: 'WhatsApp',
+      view: 'View',
+      viewReceipt: 'View Receipt',
+      retry: 'Retry Processing',
+      viewDetails: 'View Details',
+      card: 'Card',
+      bankTransfer: 'Bank Transfer',
+      cash: 'Cash',
+      swift: 'Swift',
     },
-  }[language] || {};
+  };
 
-  const filters = [
-    { key: 'all', label: t.all },
-    { key: 'pending', label: t.pending },
-    { key: 'verified', label: t.verified },
-    { key: 'failed', label: t.failed },
+  const t = translations[currentLanguage.code] || translations.en;
+
+  // Mock stats
+  const stats = [
+    { label: t.stats.confirmed, value: '45.2k', trend: '+12%', trendUp: true, color: 'primary' },
+    { label: t.stats.pending, value: '12.8k', trend: '+5%', trendUp: true, color: 'gold' },
+    { label: t.stats.rejected, value: '3.1k', trend: '-2%', trendUp: false, color: 'red' },
+    { label: t.stats.total, value: '61.1k', trend: '+8%', trendUp: true, color: 'dark' },
   ];
 
-  const getFilteredDonations = () => {
-    let filtered = donations;
-    if (filter !== 'all') {
-      filtered = filtered.filter(d => d.status === filter);
+  // Mock donations data
+  const donations = [
+    {
+      id: 1,
+      donor: 'Sarah Jenkins',
+      phone: '+1 234 567 890',
+      amount: 250,
+      trxId: 'TRX-9482',
+      project: 'Education Fund',
+      method: 'card',
+      status: 'pending',
+    },
+    {
+      id: 2,
+      donor: 'Michael Chen',
+      phone: '+1 987 654 321',
+      amount: 1200,
+      trxId: 'TRX-8821',
+      project: 'Clean Water Project',
+      method: 'bank',
+      status: 'confirmed',
+    },
+    {
+      id: 3,
+      donor: 'Alice Rivera',
+      phone: '+1 555 019 992',
+      amount: 45,
+      trxId: 'TRX-7712',
+      project: 'Food Program',
+      method: 'cash',
+      status: 'rejected',
+    },
+    {
+      id: 4,
+      donor: 'Robert Wilson',
+      phone: '+1 442 990 123',
+      amount: 3500,
+      trxId: 'TRX-9490',
+      project: 'Shelter Relief',
+      method: 'swift',
+      status: 'pending',
+    },
+  ];
+
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900/30';
+      case 'confirmed':
+        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800';
+      case 'rejected':
+        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-80';
+      default:
+        return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800';
     }
-    if (selectedProject !== 'all') {
-      filtered = filtered.filter(d => d.projectId === parseInt(selectedProject));
-    }
-    if (searchTerm) {
-      filtered = filtered.filter(d => 
-        d.donorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.reference?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    return filtered;
   };
 
-  const filteredDonations = getFilteredDonations();
-  const donationCounts = filters.reduce((acc, f) => ({
-    ...acc,
-    [f.key]: f.key === 'all' ? donations.length : donations.filter(d => d.status === f.key).length
-  }), {});
-
-  const pendingCount = donations.filter(d => d.status === 'pending').length;
-  const currentMonthTotal = donations
-    .filter(d => {
-      const date = new Date(d.date);
-      const now = new Date();
-      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear() && d.status === 'verified';
-    })
-    .reduce((sum, d) => sum + d.amount, 0);
-
-  const handleVerify = (donationId) => {
-    verifyDonation(donationId);
-    setVerificationModal(null);
+  const getMethodIcon = (method) => {
+    const icons = {
+      card: 'credit_card',
+      bank: 'account_balance',
+      cash: 'payments',
+      swift: 'account_balance',
+    };
+    return icons[method] || 'payments';
   };
 
-  const handleReject = (donationId, reason) => {
-    rejectDonation(donationId, reason);
-    setVerificationModal(null);
+  const getMethodLabel = (method) => {
+    const labels = {
+      card: t.card,
+      bank: t.bankTransfer,
+      cash: t.cash,
+      swift: t.swift,
+    };
+    return labels[method] || method;
   };
 
-  const isRTL = language === 'ar';
+  const filteredDonations = donations.filter(d => {
+    const matchesSearch = d.donor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         d.trxId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         d.phone.includes(searchQuery);
+    const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
-        <p className="text-gray-600 mt-1">{t.totalThisMonth}: <span className="font-semibold text-primary-600">{formatCurrency(currentMonthTotal)}</span></p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-text-primary dark:text-white">{t.title}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+            <span className="material-symbols-outlined">download</span>
+          </button>
+          <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+            <span className="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
       </div>
 
-      {/* Urgent Alert */}
-      {pendingCount > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <AlertTriangle className="w-6 h-6 text-orange-600 flex-shrink-0" />
-            <p className="text-orange-800 font-medium">
-              ⚠️ {pendingCount} {t.urgent}
-            </p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {stats.map((stat, index) => (
+          <Card
+            key={index}
+            padding="md"
+            className={`border ${
+              stat.color === 'gold'
+                ? 'border-yellow-200 dark:border-yellow-900/30'
+                : stat.color === 'red'
+                ? 'border-red-200 dark:border-red-900/30'
+                : stat.color === 'dark'
+                ? 'bg-slate-800 dark:bg-slate-950 border-slate-700'
+                : 'border-primary/20'
+            }`}
+          >
+            <div className="flex flex-col gap-1">
+              <p className={`text-xs font-medium ${stat.color === 'dark' ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                {stat.label}
+              </p>
+              <p className={`text-xl font-bold ${
+                stat.color === 'gold'
+                  ? 'text-yellow-600 dark:text-yellow-400'
+                  : stat.color === 'red'
+                  ? 'text-red-600 dark:text-red-400'
+                  : stat.color === 'dark'
+                  ? 'text-white'
+                  : 'text-primary'
+              }`}>
+                ${stat.value}
+              </p>
+              <div className={`flex items-center gap-1 text-[10px] font-bold ${
+                stat.trendUp ? 'text-green-600' : 'text-red-600'
+              }`}>
+                <span className="material-symbols-outlined text-sm">
+                  {stat.trendUp ? 'trending_up' : 'trending_down'}
+                </span>
+                {stat.trend}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <div className="flex w-full items-stretch rounded-xl h-11 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="text-slate-400 flex items-center justify-center pl-4">
+            <span className="material-symbols-outlined">search</span>
           </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t.search}
+            className="w-full border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-400 text-text-primary dark:text-white"
+          />
         </div>
-      )}
+      </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-          <div className="flex flex-wrap gap-2">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === f.key
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {f.label} ({donationCounts[f.key]})
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="input-field w-full sm:w-48"
-            >
-              <option value="all">{t.allProjects}</option>
-              {projects.map(p => (
-                <option key={p.id} value={p.id}>{p.title}</option>
-              ))}
-            </select>
-            <div className="relative w-full sm:w-64">
-              <Search className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
-              <input
-                type="text"
-                placeholder={t.search}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-300 outline-none`}
-              />
-            </div>
-          </div>
-        </div>
+      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        <button className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white">
+          <span className="material-symbols-outlined text-lg">calendar_today</span>
+          {t.dateRange}
+        </button>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white"
+        >
+          <option value="all">{t.status}: {t.all}</option>
+          <option value="pending">{t.status}: {t.stats.pending}</option>
+          <option value="confirmed">{t.status}: {t.stats.confirmed}</option>
+          <option value="rejected">{t.status}: {t.stats.rejected}</option>
+        </select>
+        <button className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 text-xs font-medium text-text-primary dark:text-white">
+          {t.project}: {t.all}
+          <span className="material-symbols-outlined text-lg">expand_more</span>
+        </button>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="block lg:hidden space-y-4">
+      {/* Recent Donations Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-text-primary dark:text-white text-base font-bold">{t.recentDonations}</h3>
+        <button className="text-primary text-xs font-semibold flex items-center gap-1 hover:underline">
+          {t.bulkActions}
+          <span className="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+        </button>
+      </div>
+
+      {/* Donations List */}
+      <div className="flex flex-col gap-3">
         {filteredDonations.map((donation) => (
-          <div key={donation.id} className={`bg-white rounded-xl shadow-sm p-4 ${donation.status === 'pending' ? 'border-r-4 border-orange-400' : ''}`}>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="font-medium text-gray-900">{donation.donorName}</p>
-                {donation.isAnonymous && <span className="text-xs text-gray-500">{t.anonymous}</span>}
+          <Card
+            key={donation.id}
+            padding="md"
+            className={getStatusStyles(donation.status)}
+          >
+            <div className="flex flex-col gap-3">
+              {/* Main Info */}
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col">
+                  <Badge
+                    variant={
+                      donation.status === 'confirmed'
+                        ? 'success'
+                        : donation.status === 'pending'
+                        ? 'warning'
+                        : 'error'
+                    }
+                    size="sm"
+                    className="w-fit mb-1 text-[10px] uppercase tracking-wider"
+                  >
+                    {donation.status === 'confirmed' ? t.stats.confirmed : donation.status === 'pending' ? t.stats.pending : t.stats.rejected}
+                  </Badge>
+                  <h4 className="text-sm font-bold text-text-primary dark:text-white">{donation.donor}</h4>
+                  <p className="text-xs text-slate-500">{donation.phone}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-bold ${donation.status === 'rejected' ? 'text-slate-400' : 'text-primary'}`}>
+                    ${donation.amount.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-slate-400">#{donation.trxId}</p>
+                </div>
               </div>
-              <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${getStatusColor(donation.status)}`}>
-                {donation.status === 'verified' && <CheckCircle className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                {donation.status === 'pending' && <Clock className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                {donation.status === 'failed' && <XCircle className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                {getStatusLabel(donation.status)}
-              </span>
-            </div>
-            
-            <div className="space-y-2 mb-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.project}:</span>
-                <span className="text-gray-700 max-w-[150px] truncate">{donation.projectName}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.amount}:</span>
-                <span className="font-semibold text-gray-900">{formatCurrency(donation.amount)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.method}:</span>
-                <span className="text-gray-700 capitalize">{donation.method === 'card' ? t.card : t.transfer}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t.date}:</span>
-                <span className="text-gray-600">{formatDate(donation.date)}</span>
-              </div>
-            </div>
 
-            {donation.status === 'pending' && (
-              <button
-                onClick={() => setVerificationModal(donation)}
-                className="w-full py-2 text-primary-600 font-medium bg-primary-50 rounded-lg hover:bg-primary-100"
-              >
-                {t.verify}
-              </button>
-            )}
-          </div>
+              {/* Project & Method */}
+              <div className="flex items-center justify-between text-xs border-t border-slate-100 dark:border-slate-800 pt-2">
+                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                  <span className="material-symbols-outlined text-sm">school</span>
+                  <span>{donation.project}</span>
+                </div>
+                <div className="flex items-center gap-1 text-slate-400">
+                  <span className="material-symbols-outlined text-sm">{getMethodIcon(donation.method)}</span>
+                  <span>{getMethodLabel(donation.method)}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 mt-1">
+                {donation.status === 'pending' && (
+                  <>
+                    <button className="flex-1 bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                      {t.confirm}
+                    </button>
+                    <button className="flex-1 bg-white dark:bg-slate-800 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                      {t.reject}
+                    </button>
+                    <button className="w-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                    </button>
+                  </>
+                )}
+                {donation.status === 'confirmed' && (
+                  <button className="flex-1 border border-primary/30 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors">
+                    <span className="material-symbols-outlined text-sm">receipt</span>
+                    {t.viewReceipt}
+                  </button>
+                )}
+                {donation.status === 'rejected' && (
+                  <>
+                    <button className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                      {t.viewDetails}
+                    </button>
+                    <button className="flex-1 border border-primary/20 text-primary text-xs font-bold py-2 rounded-lg hover:bg-primary/5 transition-colors">
+                      {t.retry}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </Card>
         ))}
-        {filteredDonations.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <p className="text-gray-500">{t.noDonations}</p>
-          </div>
-        )}
       </div>
 
-      {/* Desktop Table */}
-      <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.donor}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.project}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.amount}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.method}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.reference}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.status}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.date}</th>
-                <th className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{t.actions}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredDonations.map((donation) => (
-                <tr key={donation.id} className={donation.status === 'pending' ? 'bg-orange-50' : ''}>
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="font-medium text-gray-900">{donation.donorName}</p>
-                      {donation.isAnonymous && <span className="text-xs text-gray-500">{t.anonymous}</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{donation.projectName}</td>
-                  <td className="px-4 py-3 font-semibold text-gray-900">{formatCurrency(donation.amount)}</td>
-                  <td className="px-4 py-3 text-sm capitalize">{donation.method === 'card' ? t.card : t.transfer}</td>
-                  <td className="px-4 py-3 text-sm font-mono text-gray-600">{donation.reference || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${getStatusColor(donation.status)}`}>
-                      {donation.status === 'verified' && <CheckCircle className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                      {donation.status === 'pending' && <Clock className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                      {donation.status === 'failed' && <XCircle className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />}
-                      {getStatusLabel(donation.status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(donation.date)}</td>
-                  <td className="px-4 py-3">
-                    {donation.status === 'pending' ? (
-                      <button
-                        onClick={() => setVerificationModal(donation)}
-                        className="text-primary-600 font-medium hover:underline"
-                      >
-                        {t.verify}
-                      </button>
-                    ) : (
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <Eye className="w-5 h-5" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Pagination */}
+      <div className="flex justify-between items-center pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-slate-400 font-bold uppercase">Page 1 of 12</span>
+          <span className="text-xs text-slate-600 dark:text-slate-300">Showing 1-4 of 48</span>
         </div>
-        {filteredDonations.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">{t.noDonations}</p>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-400 disabled:opacity-50" disabled>
+            <span className="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-primary hover:bg-primary/5 transition-colors">
+            <span className="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
       </div>
-
-      {/* Verification Modal */}
-      {verificationModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{t.verificationTitle}</h3>
-              <p className="text-sm text-gray-500">{t.reference}: {verificationModal.reference}</p>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Donation Info */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-4">{t.donationInfo}</h4>
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <span className="text-gray-500">{t.donor}:</span>
-                      <p className="font-medium">{verificationModal.donorName}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">{t.whatsapp}:</span>
-                      <p className="font-medium">{verificationModal.donorPhone}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">{t.project}:</span>
-                      <p className="font-medium">{verificationModal.projectName}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">{t.declaredAmount}:</span>
-                      <p className="font-medium text-lg">{formatCurrency(verificationModal.amount)}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">{t.submissionDate}:</span>
-                      <p className="font-medium">{formatDate(verificationModal.date)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Receipt */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-4">{t.receipt}</h4>
-                  {verificationModal.receiptUrl ? (
-                    <img 
-                      src={verificationModal.receiptUrl} 
-                      alt="Receipt" 
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  ) : (
-                    <div className="bg-gray-100 rounded-lg p-8 text-center">
-                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500">{t.noReceipt}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Checklist */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">{t.checklist}</h4>
-                <div className="space-y-2 text-sm">
-                  <label className={`flex items-center gap-2 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <input type="checkbox" className="rounded" />
-                    <span>{t.amountMatch} ({formatCurrency(verificationModal.amount)})</span>
-                  </label>
-                  <label className={`flex items-center gap-2 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <input type="checkbox" className="rounded" />
-                    <span>{t.referenceVisible} ({verificationModal.reference})</span>
-                  </label>
-                  <label className={`flex items-center gap-2 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <input type="checkbox" className="rounded" />
-                    <span>{t.dateRecent}</span>
-                  </label>
-                  <label className={`flex items-center gap-2 cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <input type="checkbox" className="rounded" />
-                    <span>{t.accountCorrect}</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div className={`p-6 border-t border-gray-200 flex justify-end gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <button
-                onClick={() => setVerificationModal(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                {t.cancel}
-              </button>
-              <button
-                onClick={() => handleReject(verificationModal.id, 'Montant incorrect')}
-                className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
-              >
-                {t.reject}
-              </button>
-              <button
-                onClick={() => handleVerify(verificationModal.id)}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-              >
-                ✓ {t.approve}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

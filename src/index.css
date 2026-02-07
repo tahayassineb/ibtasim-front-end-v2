@@ -165,16 +165,25 @@
     --safe-right: env(safe-area-inset-right, 0px);
   }
 
-  /* Dark Mode Variables */
+  /* Dark Mode Variables - Enhanced */
   .dark {
-    --color-bg-light: #112121;
+    /* Background Colors - Deep Teal/Slate */
+    --color-bg-light: #0e1b1b;
     --color-bg-soft: #1a2e2e;
-    --color-bg-white: #1a2e2e;
-    --color-text-primary: #FFFFFF;
+    --color-bg-white: #142828;
+    --color-bg-dark-card: #1a2e2e;
+    --color-bg-teal-wash: rgba(13, 116, 119, 0.1);
+    
+    /* Text Colors - Improved Contrast */
+    --color-text-primary: #f1f5f9;
     --color-text-secondary: #94a3b8;
     --color-text-muted: #64748b;
-    --color-border-light: rgba(255,255,255,0.1);
-    --color-border-default: rgba(255,255,255,0.1);
+    --color-text-white: #f1f5f9;
+    
+    /* Border Colors */
+    --color-border-light: rgba(255,255,255,0.08);
+    --color-border-default: rgba(255,255,255,0.12);
+    --color-border-primary: rgba(13, 116, 119, 0.3);
   }
 
   * {
@@ -587,5 +596,87 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* ============================================
+     DARK MODE TRANSITION
+     ============================================ */
+  
+  html, body {
+    @apply transition-colors duration-300 ease-out;
+  }
+  
+  /* Smooth transition for all elements with color changes */
+  *, *::before, *::after {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Exclude transform and opacity from the transition to prevent performance issues */
+  .transform-gpu {
+    transition-property: transform;
+  }
+  
+  /* ============================================
+     DARK MODE COMPONENT OVERRIDES
+     ============================================ */
+  
+  /* Form inputs in dark mode */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    @apply bg-slate-800 border-slate-700 text-white placeholder-slate-500;
+  }
+  
+  .dark input:focus,
+  .dark textarea:focus,
+  .dark select:focus {
+    @apply ring-primary/30 border-primary;
+  }
+  
+  /* Cards in dark mode */
+  .dark .card {
+    @apply bg-slate-800 border-slate-700;
+  }
+  
+  /* Tables in dark mode */
+  .dark table {
+    @apply border-slate-700;
+  }
+  
+  .dark th,
+  .dark td {
+    @apply border-slate-700 text-slate-200;
+  }
+  
+  .dark thead {
+    @apply bg-slate-800/50;
+  }
+  
+  .dark tbody tr:hover {
+    @apply bg-slate-700/30;
+  }
+  
+  /* Dropdowns and modals */
+  .dark [role="dialog"],
+  .dark [role="listbox"] {
+    @apply bg-slate-800 border-slate-700;
+  }
+  
+  /* Scrollbars in dark mode */
+  .dark ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .dark ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
   }
 }

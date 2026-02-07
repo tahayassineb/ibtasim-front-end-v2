@@ -5,7 +5,7 @@ import Button from '../components/Button';
 import Badge from '../components/Badge';
 
 // ============================================
-// DONATION FLOW - 5 Step Wizard
+// DONATION FLOW - 6 Step Wizard with Auth
 // ============================================
 
 const DONATION_AMOUNTS = [200, 500, 1000];
@@ -50,6 +50,8 @@ const DonationFlow = () => {
     t, 
     currentLanguage, 
     user, 
+    isAuthenticated,
+    login,
     donationState, 
     updateDonation, 
     resetDonation, 
@@ -59,13 +61,33 @@ const DonationFlow = () => {
     formatCurrency,
   } = useApp();
   
-  const [step, setStep] = useState(donationState.step || 1);
+  // Determine initial step based on auth status
+  const getInitialStep = () => {
+    if (!isAuthenticated) return 0; // Auth step
+    return donationState.step || 1;
+  };
+  
+  const [step, setStep] = useState(getInitialStep());
   const [isLoading, setIsLoading] = useState(false);
   const [otpTimer, setOtpTimer] = useState(120);
   const [otpValues, setOtpValues] = useState(['', '', '', '']);
   const otpRefs = [useRef(), useRef(), useRef(), useRef()];
   const [uploadedFile, setUploadedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  
+  // Auth state
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authFormData, setAuthFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [authErrors, setAuthErrors] = useState({});
+  const [otpSent, setOtpSent] = useState(false);
   
   const isRTL = currentLanguage.dir === 'rtl';
   const lang = currentLanguage.code;
@@ -86,6 +108,25 @@ const DonationFlow = () => {
   // Translations
   const translations = {
     ar: {
+      // Auth Step
+      welcome: 'مرحباً بك',
+      continueAsGuest: 'المتابعة كزائر',
+      haveAccount: 'لديك حساب؟',
+      noAccount: 'ليس لديك حساب؟',
+      login: 'تسجيل الدخول',
+      register: 'إنشاء حساب',
+      fullName: 'الاسم الكامل',
+      email: 'البريد الإلكتروني',
+      phone: 'رقم الهاتف',
+      password: 'كلمة المرور',
+      confirmPassword: 'تأكيد كلمة المرور',
+      enterOtp: 'أدخل رمز التحقق',
+      otpSent: 'تم إرسال رمز التحقق إلى',
+      verify: 'تحقق',
+      resendCode: 'إعادة إرسال الرمز',
+      or: 'أو',
+      continueToDonation: 'المتابعة للتبرع',
+      
       // Step 1 - Amount
       makeDonation: 'التبرع',
       activeCampaign: 'حملة نشطة',
@@ -98,18 +139,8 @@ const DonationFlow = () => {
       yourImpact: 'تأثيرك',
       totalDonation: 'إجمالي التبرع',
       billingDetails: 'بيانات الفوترة',
-      fullName: 'الاسم الكامل',
-      email: 'البريد الإلكتروني',
       continue: 'متابعة',
       secureTransaction: 'معاملة مشفرة 256-bit',
-      
-      // Step 2 - Phone Verification
-      phoneVerification: 'تحقق من الهاتف',
-      enterOtp: 'أدخل رمز التحقق',
-      otpSent: 'تم إرسال رمز التحقق المكون من 4 أرقام إلى الهاتف',
-      verify: 'تحقق',
-      resendCode: 'لم يصلك الرمز؟',
-      resend: 'إعادة الإرسال',
       
       // Step 3 - Payment Methods
       selectPayment: 'اختر طريقة الدفع',
@@ -155,6 +186,25 @@ const DonationFlow = () => {
       processingFee: 'رسوم المعالجة',
     },
     fr: {
+      // Auth Step
+      welcome: 'Bienvenue',
+      continueAsGuest: 'Continuer en invité',
+      haveAccount: 'Vous avez un compte?',
+      noAccount: 'Vous n\'avez pas de compte?',
+      login: 'Connexion',
+      register: 'Inscription',
+      fullName: 'Nom complet',
+      email: 'Adresse email',
+      phone: 'Numéro de téléphone',
+      password: 'Mot de passe',
+      confirmPassword: 'Confirmer le mot de passe',
+      enterOtp: 'Entrez le code',
+      otpSent: 'Un code a été envoyé à',
+      verify: 'Vérifier',
+      resendCode: 'Renvoyer le code',
+      or: 'ou',
+      continueToDonation: 'Continuer vers le don',
+      
       // Step 1 - Amount
       makeDonation: 'Faire un don',
       activeCampaign: 'Campagne active',
@@ -167,18 +217,8 @@ const DonationFlow = () => {
       yourImpact: 'Votre impact',
       totalDonation: 'Don total',
       billingDetails: 'Détails de facturation',
-      fullName: 'Nom complet',
-      email: 'Adresse email',
       continue: 'Continuer',
       secureTransaction: 'Transaction sécurisée 256-bit',
-      
-      // Step 2 - Phone Verification
-      phoneVerification: 'Vérification téléphone',
-      enterOtp: 'Entrez le code',
-      otpSent: 'Un code de vérification à 4 chiffres a été envoyé au',
-      verify: 'Vérifier',
-      resendCode: 'Vous n\'avez pas reçu le code?',
-      resend: 'Renvoyer',
       
       // Step 3 - Payment Methods
       selectPayment: 'Choisir un mode de paiement',
@@ -224,6 +264,25 @@ const DonationFlow = () => {
       processingFee: 'Frais de traitement',
     },
     en: {
+      // Auth Step
+      welcome: 'Welcome',
+      continueAsGuest: 'Continue as Guest',
+      haveAccount: 'Have an account?',
+      noAccount: 'Don\'t have an account?',
+      login: 'Login',
+      register: 'Register',
+      fullName: 'Full Name',
+      email: 'Email Address',
+      phone: 'Phone Number',
+      password: 'Password',
+      confirmPassword: 'Confirm Password',
+      enterOtp: 'Enter Verification Code',
+      otpSent: 'A code has been sent to',
+      verify: 'Verify',
+      resendCode: 'Resend Code',
+      or: 'or',
+      continueToDonation: 'Continue to Donation',
+      
       // Step 1 - Amount
       makeDonation: 'Make a Donation',
       activeCampaign: 'Active Campaign',
@@ -236,18 +295,8 @@ const DonationFlow = () => {
       yourImpact: 'Your Impact',
       totalDonation: 'Total Donation',
       billingDetails: 'Billing Details',
-      fullName: 'Full Name',
-      email: 'Email Address',
       continue: 'Continue',
       secureTransaction: 'Secure 256-bit encrypted transaction',
-      
-      // Step 2 - Phone Verification
-      phoneVerification: 'Phone Verification',
-      enterOtp: 'Enter Verification Code',
-      otpSent: 'A 4-digit verification code has been sent to',
-      verify: 'Verify',
-      resendCode: 'Didn\'t receive the code?',
-      resend: 'Resend',
       
       // Step 3 - Payment Methods
       selectPayment: 'Select Payment Method',
@@ -302,6 +351,352 @@ const DonationFlow = () => {
       ? parseFloat(donationData.customAmount) || 0
       : donationData.amount;
     return baseAmount;
+  };
+  
+  // Validation functions
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validatePhone = (phone) => {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length === 10 && (cleaned.startsWith('06') || cleaned.startsWith('07') || cleaned.startsWith('05'));
+  };
+  
+  // Handle auth form changes
+  const handleAuthChange = (e) => {
+    const { name, value } = e.target;
+    setAuthFormData(prev => ({ ...prev, [name]: value }));
+    if (authErrors[name]) setAuthErrors(prev => ({ ...prev, [name]: null }));
+  };
+  
+  // Handle phone input
+  const handlePhoneChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 10) value = value.slice(0, 10);
+    setAuthFormData(prev => ({ ...prev, phone: value }));
+    if (authErrors.phone) setAuthErrors(prev => ({ ...prev, phone: null }));
+  };
+  
+  // Format phone for display
+  const formatPhoneDisplay = (phone) => {
+    if (!phone) return '';
+    if (phone.length <= 2) return phone;
+    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
+    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
+    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
+  };
+  
+  // Handle login submission
+  const handleLogin = async () => {
+    const errors = {};
+    if (!validatePhone(authFormData.phone)) {
+      errors.phone = lang === 'ar' ? 'رقم هاتف غير صحيح' : lang === 'fr' ? 'Numéro invalide' : 'Invalid phone number';
+    }
+    if (!authFormData.password || authFormData.password.length < 6) {
+      errors.password = lang === 'ar' ? 'كلمة المرور مطلوبة' : lang === 'fr' ? 'Mot de passe requis' : 'Password required';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setAuthErrors(errors);
+      return;
+    }
+    
+    setIsLoading(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Demo login
+    const userData = {
+      id: 'user_' + Date.now(),
+      name: 'Demo User',
+      phone: '+212 ' + formatPhoneDisplay(authFormData.phone),
+      email: 'demo@example.com',
+      avatar: null,
+    };
+    
+    login(userData);
+    setIsLoading(false);
+    setStep(1); // Go to amount selection
+    showToast(lang === 'ar' ? 'تم تسجيل الدخول' : lang === 'fr' ? 'Connecté' : 'Logged in', 'success');
+  };
+  
+  // Handle register submission
+  const handleRegister = async () => {
+    const errors = {};
+    if (!authFormData.fullName.trim()) {
+      errors.fullName = lang === 'ar' ? 'الاسم مطلوب' : lang === 'fr' ? 'Nom requis' : 'Name required';
+    }
+    if (!validateEmail(authFormData.email)) {
+      errors.email = lang === 'ar' ? 'بريد غير صحيح' : lang === 'fr' ? 'Email invalide' : 'Invalid email';
+    }
+    if (!validatePhone(authFormData.phone)) {
+      errors.phone = lang === 'ar' ? 'رقم هاتف غير صحيح' : lang === 'fr' ? 'Numéro invalide' : 'Invalid phone number';
+    }
+    if (!authFormData.password || authFormData.password.length < 6) {
+      errors.password = lang === 'ar' ? '6 أحرف على الأقل' : lang === 'fr' ? '6 caractères minimum' : '6 characters minimum';
+    }
+    if (authFormData.password !== authFormData.confirmPassword) {
+      errors.confirmPassword = lang === 'ar' ? 'كلمات المرور غير متطابقة' : lang === 'fr' ? 'Mots de passe différents' : 'Passwords do not match';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setAuthErrors(errors);
+      return;
+    }
+    
+    // Send OTP
+    setOtpSent(true);
+    setOtpTimer(120);
+    showToast(lang === 'ar' ? 'تم إرسال الرمز' : lang === 'fr' ? 'Code envoyé' : 'Code sent', 'success');
+  };
+  
+  // Handle OTP verification
+  const handleOtpVerify = async () => {
+    const isOtpComplete = otpValues.every(v => v.length === 1);
+    if (!isOtpComplete) return;
+    
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Demo register and login
+    const userData = {
+      id: 'user_' + Date.now(),
+      name: authFormData.fullName,
+      phone: '+212 ' + formatPhoneDisplay(authFormData.phone),
+      email: authFormData.email,
+      avatar: null,
+    };
+    
+    login(userData);
+    setIsLoading(false);
+    setStep(1); // Go to amount selection
+    showToast(lang === 'ar' ? 'تم إنشاء الحساب' : lang === 'fr' ? 'Compte créé' : 'Account created', 'success');
+  };
+  
+  // Step 0: Authentication
+  const Step0Auth = () => {
+    // Handle OTP input
+    const handleOtpChange = (index, value) => {
+      if (value.length > 1) value = value[0];
+      if (!/^\d*$/.test(value)) return;
+      
+      const newOtp = [...otpValues];
+      newOtp[index] = value;
+      setOtpValues(newOtp);
+      
+      if (value && index < 3) {
+        otpRefs[index + 1].current?.focus();
+      }
+    };
+    
+    const handleKeyDown = (index, e) => {
+      if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
+        otpRefs[index - 1].current?.focus();
+      }
+    };
+    
+    const formatTime = (seconds) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+    
+    useEffect(() => {
+      if (otpSent && otpTimer > 0) {
+        const timer = setTimeout(() => setOtpTimer(prev => prev - 1), 1000);
+        return () => clearTimeout(timer);
+      }
+    }, [otpSent, otpTimer]);
+    
+    if (otpSent) {
+      return (
+        <div className="flex-1 flex flex-col items-center px-6 pt-10 pb-8">
+          <div className="mb-8 p-4 bg-primary/10 rounded-full">
+            <span className="material-symbols-outlined text-primary text-5xl">phonelink_ring</span>
+          </div>
+          
+          <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center pb-3">
+            {tx.enterOtp}
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-base text-center max-w-xs">
+            {tx.otpSent} <span className="font-bold text-primary" dir="ltr">+212 {formatPhoneDisplay(authFormData.phone)}</span>
+          </p>
+          
+          <div className="mt-10 w-full max-w-sm">
+            <fieldset className="flex justify-between gap-2 sm:gap-4" dir="ltr">
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={index}
+                  ref={otpRefs[index]}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={otpValues[index]}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  className="flex h-14 w-12 sm:w-14 text-center text-xl font-bold bg-white dark:bg-gray-800 border-0 rounded-xl shadow-lg shadow-primary/5 focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                  placeholder="-"
+                />
+              ))}
+            </fieldset>
+          </div>
+          
+          <div className="mt-10 flex flex-col items-center gap-4">
+            {otpTimer > 0 ? (
+              <div className="flex items-center gap-3 py-2 px-6 bg-primary/5 dark:bg-primary/10 rounded-full border border-primary/10">
+                <span className="material-symbols-outlined text-primary text-sm">schedule</span>
+                <p className="text-primary text-sm font-bold tracking-widest" dir="ltr">
+                  {formatTime(otpTimer)}
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={() => setOtpTimer(120)}
+                className="text-primary font-bold hover:underline"
+              >
+                {tx.resendCode}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex-1 flex flex-col px-6 pt-6 pb-8">
+        <h1 className="text-gray-900 dark:text-white text-2xl font-bold text-center mb-2">
+          {tx.welcome}
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
+          {lang === 'ar' ? 'سجل الدخول أو أنشئ حساباً للمتابعة' : lang === 'fr' ? 'Connectez-vous ou créez un compte pour continuer' : 'Login or create an account to continue'}
+        </p>
+        
+        {/* Auth Mode Toggle */}
+        <div className="flex h-12 items-center justify-center rounded-xl bg-gray-200/50 dark:bg-white/10 p-1 mb-6">
+          <button
+            onClick={() => setAuthMode('login')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              authMode === 'login'
+                ? 'bg-white dark:bg-primary text-primary dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            {tx.login}
+          </button>
+          <button
+            onClick={() => setAuthMode('register')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              authMode === 'register'
+                ? 'bg-white dark:bg-primary text-primary dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            {tx.register}
+          </button>
+        </div>
+        
+        {/* Form */}
+        <div className="space-y-4 flex-1">
+          {authMode === 'register' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.fullName}</label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={authFormData.fullName}
+                  onChange={handleAuthChange}
+                  placeholder="John Doe"
+                  className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                />
+                {authErrors.fullName && <p className="text-error text-xs mt-1">{authErrors.fullName}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.email}</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={authFormData.email}
+                  onChange={handleAuthChange}
+                  placeholder="example@mail.com"
+                  className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                />
+                {authErrors.email && <p className="text-error text-xs mt-1">{authErrors.email}</p>}
+              </div>
+            </>
+          )}
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.phone}</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">+212</span>
+              <input
+                type="tel"
+                name="phone"
+                value={formatPhoneDisplay(authFormData.phone)}
+                onChange={handlePhoneChange}
+                placeholder="6XX XXX XXX"
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-16 pr-4 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                dir="ltr"
+              />
+            </div>
+            {authErrors.phone && <p className="text-error text-xs mt-1">{authErrors.phone}</p>}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.password}</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={authFormData.password}
+                onChange={handleAuthChange}
+                placeholder="••••••••"
+                className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+              </button>
+            </div>
+            {authErrors.password && <p className="text-error text-xs mt-1">{authErrors.password}</p>}
+          </div>
+          
+          {authMode === 'register' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tx.confirmPassword}</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  name="confirmPassword"
+                  value={authFormData.confirmPassword}
+                  onChange={handleAuthChange}
+                  placeholder="••••••••"
+                  className="w-full h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 pr-12 text-base focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <span className="material-symbols-outlined">{showConfirmPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+              {authErrors.confirmPassword && <p className="text-error text-xs mt-1">{authErrors.confirmPassword}</p>}
+            </div>
+          )}
+        </div>
+        
+        {/* Continue as Guest */}
+        <button
+          onClick={() => setStep(1)}
+          className="mt-6 text-primary text-sm font-medium hover:underline"
+        >
+          {tx.continueAsGuest}
+        </button>
+      </div>
+    );
   };
   
   // Step 1: Amount Selection
@@ -430,103 +825,8 @@ const DonationFlow = () => {
     </div>
   );
   
-  // Step 2: Phone Verification
-  const Step2PhoneVerification = () => {
-    useEffect(() => {
-      if (otpTimer > 0) {
-        const timer = setTimeout(() => setOtpTimer(prev => prev - 1), 1000);
-        return () => clearTimeout(timer);
-      }
-    }, [otpTimer]);
-    
-    const handleOtpChange = (index, value) => {
-      if (value.length > 1) value = value[0];
-      if (!/^\d*$/.test(value)) return;
-      
-      const newOtp = [...otpValues];
-      newOtp[index] = value;
-      setOtpValues(newOtp);
-      
-      // Auto-focus next
-      if (value && index < 3) {
-        otpRefs[index + 1].current?.focus();
-      }
-    };
-    
-    const handleKeyDown = (index, e) => {
-      if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
-        otpRefs[index - 1].current?.focus();
-      }
-    };
-    
-    const formatTime = (seconds) => {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-    
-    return (
-      <div className="flex-1 flex flex-col items-center px-6 pt-10 pb-8">
-        {/* Icon */}
-        <div className="mb-8 p-4 bg-primary/10 rounded-full">
-          <span className="material-symbols-outlined text-primary text-5xl">phonelink_ring</span>
-        </div>
-        
-        {/* Header */}
-        <h1 className="text-gray-900 dark:text-white text-[28px] font-bold leading-tight text-center pb-3">
-          {tx.enterOtp}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal text-center max-w-xs">
-          {tx.otpSent} <span className="font-bold text-primary" dir="ltr">+212 {donationData.phoneNumber || '6** *** **'}</span>
-        </p>
-        
-        {/* OTP Inputs */}
-        <div className="mt-12 w-full max-w-sm">
-          <fieldset className="flex justify-between gap-2 sm:gap-4" dir="ltr">
-            {[0, 1, 2, 3].map((index) => (
-              <input
-                key={index}
-                ref={otpRefs[index]}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={otpValues[index]}
-                onChange={(e) => handleOtpChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                className="flex h-14 w-12 sm:w-14 text-center text-xl font-bold bg-white dark:bg-gray-800 border-0 rounded-xl shadow-lg shadow-primary/5 focus:ring-2 focus:ring-primary focus:outline-none dark:text-white"
-                placeholder="-"
-              />
-            ))}
-          </fieldset>
-        </div>
-        
-        {/* Timer & Resend */}
-        <div className="mt-10 flex flex-col items-center gap-4">
-          {otpTimer > 0 ? (
-            <div className="flex items-center gap-3 py-2 px-6 bg-primary/5 dark:bg-primary/10 rounded-full border border-primary/10">
-              <span className="material-symbols-outlined text-primary text-sm">schedule</span>
-              <p className="text-primary text-sm font-bold tracking-widest" dir="ltr">
-                {formatTime(otpTimer)}
-              </p>
-            </div>
-          ) : (
-            <button
-              onClick={() => setOtpTimer(120)}
-              className="text-primary font-bold hover:underline"
-            >
-              {tx.resend}
-            </button>
-          )}
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            {tx.resendCode} {otpTimer > 0 && <span className="text-primary font-bold">{tx.resend}</span>}
-          </p>
-        </div>
-      </div>
-    );
-  };
-  
-  // Step 3: Payment Methods
-  const Step3PaymentMethods = () => {
+  // Step 2: Payment Methods
+  const Step2PaymentMethods = () => {
     const paymentMethods = [
       { id: 'bank', icon: 'account_balance', title: tx.bankTransfer, desc: tx.bankTransferDesc },
       { id: 'card', icon: 'credit_card', title: tx.creditCard, desc: tx.creditCardDesc },
@@ -588,8 +888,8 @@ const DonationFlow = () => {
     );
   };
   
-  // Step 4: Receipt Upload
-  const Step4ReceiptUpload = () => {
+  // Step 3: Receipt Upload
+  const Step3ReceiptUpload = () => {
     const handleDrag = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -759,8 +1059,8 @@ const DonationFlow = () => {
     );
   };
   
-  // Step 5: Success
-  const Step5Success = () => {
+  // Step 4: Success
+  const Step4Success = () => {
     const donationRef = `REF-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     
     const handleShare = (platform) => {
@@ -850,38 +1150,46 @@ const DonationFlow = () => {
   };
   
   // Progress Indicator
-  const ProgressIndicator = () => (
-    <div className="flex w-full flex-row items-center justify-center gap-2 py-4">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <div
-          key={s}
-          className={`
-            h-1.5 rounded-full transition-all
-            ${s <= step ? 'bg-primary w-6' : 'bg-primary/20 dark:bg-primary/10 w-3'}
-          `}
-        />
-      ))}
-    </div>
-  );
+  const ProgressIndicator = () => {
+    // Adjust steps for display (skip auth step in progress indicator)
+    const displayStep = step === 0 ? 0 : step;
+    const totalSteps = 5;
+    
+    return (
+      <div className="flex w-full flex-row items-center justify-center gap-2 py-4">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <div
+            key={s}
+            className={`
+              h-1.5 rounded-full transition-all
+              ${s <= displayStep ? 'bg-primary w-6' : 'bg-primary/20 dark:bg-primary/10 w-3'}
+            `}
+          />
+        ))}
+      </div>
+    );
+  };
   
   // Header
   const Header = () => {
     const titles = [
+      tx.welcome,
       tx.makeDonation,
-      tx.phoneVerification,
       tx.selectPayment,
       tx.receiptUpload,
       tx.success,
     ];
     
-    if (step === 5) return null;
+    if (step === 4) return null;
     
     return (
       <div className="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10">
         <button
           onClick={() => {
-            if (step === 1) {
+            if (step === 0) {
               navigate(-1);
+            } else if (step === 1 && !isAuthenticated) {
+              setStep(0); // Go back to auth
             } else {
               setStep(prev => prev - 1);
             }
@@ -893,7 +1201,7 @@ const DonationFlow = () => {
           </span>
         </button>
         <h2 className="text-gray-900 dark:text-white text-lg font-bold leading-tight flex-1 text-center mr-[-40px]">
-          {titles[step - 1]}
+          {titles[step]}
         </h2>
         <div className="size-10"></div>
       </div>
@@ -902,7 +1210,7 @@ const DonationFlow = () => {
   
   // Bottom Action
   const BottomAction = () => {
-    if (step === 5) {
+    if (step === 4) {
       return (
         <div className="p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-100 dark:border-gray-700">
           <button
@@ -918,29 +1226,39 @@ const DonationFlow = () => {
       );
     }
     
-    if (step === 2) {
-      const isOtpComplete = otpValues.every(v => v.length === 1);
+    if (step === 0) {
+      // Auth step buttons
+      const isLogin = authMode === 'login';
+      const canSubmit = isLogin 
+        ? authFormData.phone && authFormData.password
+        : authFormData.phone && authFormData.password && authFormData.fullName && authFormData.email;
+      
       return (
         <div className="p-6 pb-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
           <Button
-            onClick={() => setStep(3)}
-            disabled={!isOtpComplete}
+            onClick={authMode === 'login' ? handleLogin : handleRegister}
+            disabled={!canSubmit || isLoading}
             fullWidth
             size="xl"
-            icon="verified_user"
-            iconPosition={isRTL ? 'right' : 'left'}
+            loading={isLoading}
           >
-            {tx.verify}
+            {authMode === 'login' ? tx.login : tx.continueToDonation}
           </Button>
+          <button
+            onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+            className="w-full mt-4 text-primary text-sm font-medium hover:underline"
+          >
+            {authMode === 'login' ? `${tx.noAccount} ${tx.register}` : `${tx.haveAccount} ${tx.login}`}
+          </button>
         </div>
       );
     }
     
-    if (step === 4) {
+    if (step === 3) {
       return (
         <footer className="p-6 mt-auto bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-100 dark:border-gray-700">
           <Button
-            onClick={() => setStep(5)}
+            onClick={() => setStep(4)}
             disabled={!uploadedFile}
             fullWidth
             size="xl"
@@ -963,7 +1281,7 @@ const DonationFlow = () => {
             size="xl"
             className="shadow-lg shadow-primary/20"
           >
-            {step === 3 ? tx.continue : tx.next}
+            {step === 0 ? tx.continue : step === 2 ? tx.continue : tx.next}
           </Button>
           {step === 1 && (
             <p className="text-[10px] text-center text-gray-400 mt-3 uppercase tracking-tighter">
@@ -979,13 +1297,13 @@ const DonationFlow = () => {
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
       <div className="relative flex h-full min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden">
         <Header />
-        {step < 5 && <ProgressIndicator />}
+        {step < 4 && <ProgressIndicator />}
         
+        {step === 0 && <Step0Auth />}
         {step === 1 && <Step1Amount />}
-        {step === 2 && <Step2PhoneVerification />}
-        {step === 3 && <Step3PaymentMethods />}
-        {step === 4 && <Step4ReceiptUpload />}
-        {step === 5 && <Step5Success />}
+        {step === 2 && <Step2PaymentMethods />}
+        {step === 3 && <Step3ReceiptUpload />}
+        {step === 4 && <Step4Success />}
         
         <BottomAction />
       </div>

@@ -99,29 +99,28 @@ const MainLayout = ({ children }) => {
               {/* Language Selector */}
               <div className="relative group">
                 <button
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
+                  className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-xl text-sm font-medium
                            text-text-secondary hover:text-primary hover:bg-primary/5
                            transition-all duration-200"
                 >
                   <span className="material-symbols-outlined text-lg">language</span>
-                  <span className="hidden sm:inline">{currentLanguage.name}</span>
+                  <span className="uppercase font-bold">{language}</span>
                   <span className="material-symbols-outlined text-sm">expand_more</span>
                 </button>
                 
                 {/* Language Dropdown */}
-                <div className="absolute right-0 top-full mt-2 w-40 py-2 bg-white dark:bg-bg-dark-card rounded-xl shadow-xl border border-border-light dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  {Object.values(useApp().languages).map((lang) => (
+                <div className="absolute right-0 top-full mt-2 w-24 py-2 bg-white dark:bg-bg-dark-card rounded-xl shadow-xl border border-border-light dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  {['ar', 'fr', 'en'].map((langCode) => (
                     <button
-                      key={lang.code}
-                      onClick={() => changeLanguage(lang.code)}
-                      className={`w-full px-4 py-2 text-sm text-right transition-colors duration-200 ${
-                        language === lang.code
+                      key={langCode}
+                      onClick={() => changeLanguage(langCode)}
+                      className={`w-full px-4 py-2 text-sm text-center font-bold uppercase transition-colors duration-200 ${
+                        language === langCode
                           ? 'text-primary bg-primary/10'
                           : 'text-text-secondary hover:text-primary hover:bg-primary/5'
                       }`}
-                      dir={lang.dir}
                     >
-                      {lang.name}
+                      {langCode}
                     </button>
                   ))}
                 </div>
@@ -134,6 +133,15 @@ const MainLayout = ({ children }) => {
               >
                 <span className="material-symbols-outlined">favorite</span>
                 {t('donate')}
+              </Link>
+
+              {/* Admin Link (Desktop) */}
+              <Link
+                to="/admin/login"
+                className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary/5 transition-colors"
+                title={language === 'ar' ? 'لوحة الإدارة' : language === 'fr' ? 'Administration' : 'Admin'}
+              >
+                <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
               </Link>
 
               {/* Auth Buttons or User Menu */}
@@ -237,6 +245,14 @@ const MainLayout = ({ children }) => {
                     {t('logout')}
                   </button>
                 )}
+                {/* Admin Access */}
+                <Link
+                  to="/admin/login"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-text-secondary hover:text-primary hover:bg-primary/5 transition-colors border-t border-border-light dark:border-white/10 mt-2 pt-2"
+                >
+                  <span className="material-symbols-outlined">admin_panel_settings</span>
+                  {language === 'ar' ? 'لوحة الإدارة' : language === 'fr' ? 'Administration' : 'Admin Panel'}
+                </Link>
               </div>
             </nav>
           </div>

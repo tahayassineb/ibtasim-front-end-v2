@@ -78,7 +78,6 @@ const DonationFlow = () => {
     amount: donationState.amount || 200,
     customAmount: '',
     frequency: donationState.frequency || 'once',
-    coverFees: false,
     phoneNumber: user?.phone?.replace('+212 ', '') || '',
     paymentMethod: donationState.paymentMethod || null,
     receipt: null,
@@ -299,11 +298,10 @@ const DonationFlow = () => {
   
   // Calculate total
   const calculateTotal = () => {
-    const baseAmount = donationData.customAmount 
+    const baseAmount = donationData.customAmount
       ? parseFloat(donationData.customAmount) || 0
       : donationData.amount;
-    const fee = donationData.coverFees ? baseAmount * 0.02 : 0;
-    return baseAmount + fee;
+    return baseAmount;
   };
   
   // Step 1: Amount Selection
@@ -403,18 +401,6 @@ const DonationFlow = () => {
         </div>
       </div>
       
-      {/* Cover Fees */}
-      <div className="px-4 pt-4">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={donationData.coverFees}
-            onChange={(e) => setDonationData(prev => ({ ...prev, coverFees: e.target.checked }))}
-            className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-          />
-          <span className="text-sm text-gray-600 dark:text-gray-300">{tx.coverFees}</span>
-        </label>
-      </div>
       
       {/* Summary Card */}
       <div className="px-4 pt-8">
@@ -433,21 +419,11 @@ const DonationFlow = () => {
             </div>
           </div>
           <hr className="border-gray-200 dark:border-white/10 mb-4"/>
-          <div className="space-y-2">
-            {donationData.coverFees && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">{tx.processingFee} (2%)</span>
-                <span className="text-gray-600">
-                  {formatCurrency((donationData.customAmount ? parseFloat(donationData.customAmount) : donationData.amount) * 0.02)}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{tx.totalDonation}</span>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
-                {formatCurrency(calculateTotal())}
-              </span>
-            </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{tx.totalDonation}</span>
+            <span className="text-xl font-bold text-primary">
+              {formatCurrency(calculateTotal())}
+            </span>
           </div>
         </div>
       </div>

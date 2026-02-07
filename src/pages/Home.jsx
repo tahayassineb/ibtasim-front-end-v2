@@ -201,9 +201,9 @@ const Home = () => {
         </Link>
       </section>
 
-      <section className="px-4 space-y-6 pb-12 max-w-desktop mx-auto">
+      <section className="px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12 max-w-desktop mx-auto">
         {featuredProjects.map((project) => (
-          <Card key={project.id} variant="default" padding="none" className="overflow-hidden">
+          <Card key={project.id} variant="default" padding="none" className="overflow-hidden h-full flex flex-col">
             <div
               className="h-56 bg-cover bg-center"
               style={{ backgroundImage: `url("${project.image}")` }}
@@ -233,9 +233,9 @@ const Home = () => {
                 </div>
                 <ProgressBar value={project.progress} size="sm" />
               </div>
-              <Link to={`/projects/${project.id}`}>
+              <Link to={`/projects/${project.id}`} className="mt-auto">
                 <Button fullWidth>
-                  {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'En Savoir Plus' : 'Learn & Donate'}
+                  {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
                 </Button>
               </Link>
             </div>

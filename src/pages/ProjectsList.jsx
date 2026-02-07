@@ -158,14 +158,14 @@ const ProjectsList = () => {
       </div>
 
       {/* Project Grid */}
-      <div className="p-4 flex flex-col gap-8 max-w-desktop mx-auto">
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-desktop mx-auto">
         {filteredProjects.map((project) => (
           <Card
             key={project.id}
             variant="default"
             padding="none"
             hoverable
-            className="overflow-hidden shadow-lg shadow-black/5 border border-border-light dark:border-white/10"
+            className="overflow-hidden shadow-lg shadow-black/5 border border-border-light dark:border-white/10 h-full flex flex-col"
           >
             {/* Image with overlay */}
             <div
@@ -215,7 +215,7 @@ const ProjectsList = () => {
                 </div>
                 <Link to={`/projects/${project.id}`}>
                   <Button className="min-w-[120px] h-12">
-                    {language === 'ar' ? 'عرض المشروع' : language === 'fr' ? 'Voir le Projet' : 'View Project'}
+                    {language === 'ar' ? 'تبرع الآن' : language === 'fr' ? 'Faire un Don' : 'Donate Now'}
                   </Button>
                 </Link>
               </div>

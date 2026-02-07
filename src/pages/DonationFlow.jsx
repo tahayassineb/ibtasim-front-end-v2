@@ -781,14 +781,20 @@ const DonationFlow = () => {
         <div className="relative">
           <input
             type="number"
+            inputMode="numeric"
+            min="1"
+            step="1"
             value={donationData.customAmount}
-            onChange={(e) => setDonationData(prev => ({ 
-              ...prev, 
-              customAmount: e.target.value,
-              amount: 0 
-            }))}
+            onChange={(e) => {
+              const value = e.target.value;
+              setDonationData(prev => ({
+                ...prev,
+                customAmount: value,
+                amount: 0
+              }));
+            }}
             placeholder={tx.customAmount}
-            className="w-full h-14 bg-white dark:bg-white/5 border-none rounded-xl px-4 text-base font-medium focus:ring-2 focus:ring-primary placeholder:text-gray-400 dark:text-white"
+            className="w-full h-14 bg-white dark:bg-white/5 border-none rounded-xl px-4 text-base font-medium focus:ring-2 focus:ring-primary placeholder:text-gray-400 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">
             MAD

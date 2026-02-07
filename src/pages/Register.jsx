@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 
 // ============================================
-// REGISTER PAGE - User Registration
+// REGISTER PAGE - User Registration (Email + Password)
 // ============================================
 
 const Register = () => {
@@ -14,7 +14,6 @@ const Register = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -30,13 +29,11 @@ const Register = () => {
   const translations = {
     ar: {
       title: 'أنشئ حسابك',
-      subtitle: 'لم نجد حساباً مرتبطاً بهذا الرقم. يرجى إكمال بياناتك للانضمام إلى مجتمعنا من المتبرعين.',
+      subtitle: 'انضم إلى مجتمعنا من المتبرعين وساهم في دعم المشاريع الإنسانية.',
       fullNameLabel: 'الاسم الكامل',
       fullNamePlaceholder: 'أدخل اسمك الكامل',
       emailLabel: 'البريد الإلكتروني',
       emailPlaceholder: 'example@mail.com',
-      phoneLabel: 'رقم الهاتف',
-      phonePlaceholder: '06 XX XX XX XX',
       passwordLabel: 'كلمة المرور',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'تأكيد كلمة المرور',
@@ -51,20 +48,17 @@ const Register = () => {
       loginLink: 'تسجيل الدخول',
       nameError: 'يرجى إدخال الاسم الكامل',
       emailError: 'يرجى إدخال بريد إلكتروني صحيح',
-      phoneError: 'يرجى إدخال رقم هاتف صحيح',
       passwordError: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
       confirmPasswordError: 'كلمتا المرور غير متطابقتين',
       termsError: 'يجب الموافقة على الشروط والأحكام',
     },
     fr: {
       title: 'Créez votre compte',
-      subtitle: 'Nous n\'avons pas trouvé de compte associé à ce numéro. Veuillez compléter vos informations pour rejoindre notre communauté de donateurs.',
+      subtitle: 'Rejoignez notre communauté de donateurs et contribuez à des projets humanitaires.',
       fullNameLabel: 'Nom complet',
       fullNamePlaceholder: 'Entrez votre nom complet',
       emailLabel: 'Adresse email',
       emailPlaceholder: 'exemple@mail.com',
-      phoneLabel: 'Numéro de téléphone',
-      phonePlaceholder: '06 XX XX XX XX',
       passwordLabel: 'Mot de passe',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'Confirmer le mot de passe',
@@ -79,20 +73,17 @@ const Register = () => {
       loginLink: 'Connexion',
       nameError: 'Veuillez entrer votre nom complet',
       emailError: 'Veuillez entrer une adresse email valide',
-      phoneError: 'Veuillez entrer un numéro de téléphone valide',
       passwordError: 'Le mot de passe doit contenir au moins 6 caractères',
       confirmPasswordError: 'Les mots de passe ne correspondent pas',
       termsError: 'Vous devez accepter les conditions d\'utilisation',
     },
     en: {
       title: 'Create your account',
-      subtitle: 'We couldn\'t find an account linked to this number. Please complete your information to join our donor community.',
+      subtitle: 'Join our donor community and contribute to humanitarian projects.',
       fullNameLabel: 'Full Name',
       fullNamePlaceholder: 'Enter your full name',
       emailLabel: 'Email Address',
       emailPlaceholder: 'example@mail.com',
-      phoneLabel: 'Phone Number',
-      phonePlaceholder: '06 XX XX XX XX',
       passwordLabel: 'Password',
       passwordPlaceholder: '••••••••',
       confirmPasswordLabel: 'Confirm Password',
@@ -107,7 +98,6 @@ const Register = () => {
       loginLink: 'Login',
       nameError: 'Please enter your full name',
       emailError: 'Please enter a valid email address',
-      phoneError: 'Please enter a valid phone number',
       passwordError: 'Password must be at least 6 characters',
       confirmPasswordError: 'Passwords do not match',
       termsError: 'You must agree to the terms and conditions',
@@ -121,34 +111,12 @@ const Register = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
   
-  const validatePhone = (phone) => {
-    const cleaned = phone.replace(/\D/g, '');
-    return cleaned.length === 10 && (cleaned.startsWith('06') || cleaned.startsWith('07') || cleaned.startsWith('05'));
-  };
-  
   // Handle input changes
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   }, [errors]);
-  
-  // Handle phone input
-  const handlePhoneChange = useCallback((e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 10) value = value.slice(0, 10);
-    setFormData(prev => ({ ...prev, phone: value }));
-    if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
-  }, [errors.phone]);
-  
-  // Format phone number for display
-  const formatPhoneDisplay = (phone) => {
-    if (!phone) return '';
-    if (phone.length <= 2) return phone;
-    if (phone.length <= 5) return `${phone.slice(0, 2)} ${phone.slice(2)}`;
-    if (phone.length <= 8) return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5)}`;
-    return `${phone.slice(0, 2)} ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}`;
-  };
   
   // Validate form
   const validateForm = () => {
@@ -160,10 +128,6 @@ const Register = () => {
     
     if (!validateEmail(formData.email)) {
       newErrors.email = tx.emailError;
-    }
-    
-    if (!validatePhone(formData.phone)) {
-      newErrors.phone = tx.phoneError;
     }
     
     if (!formData.password || formData.password.length < 6) {

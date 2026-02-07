@@ -55,6 +55,17 @@ const AdminProjectForm = () => {
       loading: 'جاري التحميل...',
       imageUploaded: 'تم رفع الصورة',
       errorUpload: 'خطأ في رفع الصورة',
+      impact: 'التأثير',
+      impactDesc: 'وصف التأثير المتوقع للمشروع',
+      impactMetrics: 'مؤشرات التأثير',
+      metricLabel: 'المؤشر',
+      metricValue: 'القيمة المستهدفة',
+      addMetric: 'إضافة مؤشر',
+      updates: 'التحديثات',
+      addUpdate: 'إضافة تحديث',
+      updateTitle: 'عنوان التحديث',
+      updateContent: 'محتوى التحديث',
+      noUpdates: 'لا توجد تحديثات بعد',
     },
     fr: {
       createTitle: 'Créer un Nouveau Projet',
@@ -87,6 +98,17 @@ const AdminProjectForm = () => {
       loading: 'Chargement...',
       imageUploaded: 'Image téléchargée',
       errorUpload: 'Erreur de téléchargement',
+      impact: 'Impact',
+      impactDesc: 'Description de l\'impact attendu du projet',
+      impactMetrics: 'Indicateurs d\'Impact',
+      metricLabel: 'Indicateur',
+      metricValue: 'Valeur Cible',
+      addMetric: 'Ajouter un Indicateur',
+      updates: 'Mises à Jour',
+      addUpdate: 'Ajouter une Mise à Jour',
+      updateTitle: 'Titre de la Mise à Jour',
+      updateContent: 'Contenu de la Mise à Jour',
+      noUpdates: 'Aucune mise à jour pour l\'instant',
     },
     en: {
       createTitle: 'Create New Project',
@@ -119,6 +141,17 @@ const AdminProjectForm = () => {
       loading: 'Loading...',
       imageUploaded: 'Image uploaded',
       errorUpload: 'Upload error',
+      impact: 'Impact',
+      impactDesc: 'Description of the project\'s expected impact',
+      impactMetrics: 'Impact Metrics',
+      metricLabel: 'Metric',
+      metricValue: 'Target Value',
+      addMetric: 'Add Metric',
+      updates: 'Updates',
+      addUpdate: 'Add Update',
+      updateTitle: 'Update Title',
+      updateContent: 'Update Content',
+      noUpdates: 'No updates yet',
     },
   };
 
@@ -174,6 +207,16 @@ const AdminProjectForm = () => {
       'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400',
       'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400',
     ],
+    impact: {
+      en: '<p>This project will provide sustainable clean water access to over 500 families in rural communities.</p>',
+      fr: '<p>Ce projet fournira un accès durable à l\'eau potable à plus de 500 familles dans les communautés rurales.</p>',
+      ar: '<p>سيوفر هذا المشروع وصولاً مستداماً إلى المياه النظيفة لأكثر من 500 عائلة في المجتمعات الريفية.</p>',
+    },
+    impactMetrics: [
+      { label: 'Families Served', value: '500' },
+      { label: 'Water Points', value: '12' },
+    ],
+    updates: [],
   });
 
   const [draggedItem, setDraggedItem] = useState(null);
@@ -286,6 +329,81 @@ const AdminProjectForm = () => {
     setDraggedItem(null);
   };
 
+  // Handle impact description change
+  const handleImpactChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      impact: { ...prev.impact, [activeTab]: value },
+    }));
+  };
+
+  // Handle impact metrics
+  const handleAddMetric = () => {
+    setFormData(prev => ({
+      ...prev,
+      impactMetrics: [...prev.impactMetrics, { label: '', value: '' }],
+    }));
+  };
+
+  const handleRemoveMetric = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      impactMetrics: prev.impactMetrics.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleMetricChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      impactMetrics: prev.impactMetrics.map((m, i) =>
+        i === index ? { ...m, [field]: value } : m
+      ),
+    }));
+  };
+
+  // Handle updates
+  const handleAddUpdate = () => {
+    setFormData(prev => ({
+      ...prev,
+      updates: [
+        ...prev.updates,
+        {
+          id: Date.now(),
+          title: { en: '', fr: '', ar: '' },
+          content: { en: '', fr: '', ar: '' },
+          date: new Date().toISOString().split('T')[0],
+        }
+      ],
+    }));
+  };
+
+  const handleRemoveUpdate = (updateId) => {
+    setFormData(prev => ({
+      ...prev,
+      updates: prev.updates.filter(u => u.id !== updateId),
+    }));
+  };
+
+  const handleUpdateChange = (updateId, field, value, lang = null) => {
+    setFormData(prev => ({
+      ...prev,
+      updates: prev.updates.map(u => {
+        if (u.id !== updateId) return u;
+        if (lang) {
+          return { ...u, [field]: { ...u[field], [lang]: value } };
+        }
+        return { ...u, [field]: value };
+      }),
+    }));
+  };
+
+  // Handle preview
+  const handlePreview = () => {
+    // Store current form data in sessionStorage for preview
+    sessionStorage.setItem('projectPreview', JSON.stringify(formData));
+    window.open(`/projects/preview-${isEditMode ? id : 'new'}`, '_blank');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // Save logic here
@@ -310,8 +428,8 @@ const AdminProjectForm = () => {
             </h2>
           </div>
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => showToast('Preview mode - coming soon', 'info')}
+            <button
+              onClick={handlePreview}
               className="text-primary text-sm font-bold cursor-pointer hover:opacity-80"
             >
               {t.preview}
@@ -454,9 +572,14 @@ const AdminProjectForm = () => {
                 </div>
                 <input
                   type="number"
+                  min="1"
+                  step="1"
                   value={formData.goal}
-                  onChange={(e) => handleInputChange('goal', parseInt(e.target.value) || 0)}
-                  className="w-full pl-10 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleInputChange('goal', value === '' ? 0 : parseInt(value, 10) || 0);
+                  }}
+                  className="w-full pl-10 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
@@ -594,6 +717,135 @@ const AdminProjectForm = () => {
           <div className="mt-4 flex items-center justify-between">
             <p className="text-[11px] text-slate-500">{t.maxFiles}</p>
             <p className="text-[11px] text-slate-400">{formData.gallery.length}/10 {t.dragToReorder}</p>
+          </div>
+        </Card>
+
+        {/* Impact Section */}
+        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
+          <div className="flex items-center gap-2 mb-5">
+            <span className="material-symbols-outlined text-primary text-xl">eco</span>
+            <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.impact}</h3>
+          </div>
+
+          <div className="space-y-5">
+            {/* Impact Description */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-slate-500 uppercase tracking-wider">{t.impactDesc}</label>
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <ReactQuill
+                  theme="snow"
+                  value={formData.impact[activeTab]}
+                  onChange={handleImpactChange}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  className={`${isDarkMode ? 'dark-quill' : ''}`}
+                  style={{
+                    minHeight: '150px',
+                    backgroundColor: isDarkMode ? '#1e293b' : 'white',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Impact Metrics */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{t.impactMetrics}</label>
+                <button
+                  type="button"
+                  onClick={handleAddMetric}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span>
+                  {t.addMetric}
+                </button>
+              </div>
+              <div className="space-y-3">
+                {formData.impactMetrics.map((metric, index) => (
+                  <div key={index} className="flex gap-3 items-center">
+                    <input
+                      type="text"
+                      value={metric.label}
+                      onChange={(e) => handleMetricChange(index, 'label', e.target.value)}
+                      placeholder={t.metricLabel}
+                      className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <input
+                      type="text"
+                      value={metric.value}
+                      onChange={(e) => handleMetricChange(index, 'value', e.target.value)}
+                      placeholder={t.metricValue}
+                      className="w-32 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm py-3 px-4 border border-slate-200 dark:border-slate-700 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMetric(index)}
+                      className="p-2.5 text-slate-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Updates Section */}
+        <Card padding="lg" className="dark:bg-bg-dark-card dark:border-white/10">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-xl">update</span>
+              <h3 className="font-bold text-base tracking-tight text-text-primary dark:text-white">{t.updates}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddUpdate}
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              {t.addUpdate}
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {formData.updates.length === 0 ? (
+              <p className="text-center text-slate-400 py-8">{t.noUpdates}</p>
+            ) : (
+              formData.updates.map((update) => (
+                <div key={update.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <input
+                      type="date"
+                      value={update.date}
+                      onChange={(e) => handleUpdateChange(update.id, 'date', e.target.value)}
+                      className="bg-white dark:bg-slate-700 rounded-lg text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveUpdate(update.id)}
+                      className="p-2 text-slate-400 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={update.title[activeTab]}
+                    onChange={(e) => handleUpdateChange(update.id, 'title', e.target.value, activeTab)}
+                    placeholder={t.updateTitle}
+                    className="w-full mb-3 bg-white dark:bg-slate-700 rounded-lg text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <textarea
+                    value={update.content[activeTab]}
+                    onChange={(e) => handleUpdateChange(update.id, 'content', e.target.value, activeTab)}
+                    placeholder={t.updateContent}
+                    rows={3}
+                    className="w-full bg-white dark:bg-slate-700 rounded-lg text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 text-text-primary dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  />
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </form>

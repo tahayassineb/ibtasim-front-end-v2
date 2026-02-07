@@ -7,14 +7,25 @@ import { Card, Button, ProgressBar } from '../components';
 // PROJECT DETAIL PAGE - Two-Column Layout
 // ============================================
 
-const ProjectDetail = () => {
+const ProjectDetail = ({ preview = false }) => {
   const { t, language, isAuthenticated } = useApp();
   const { id } = useParams();
   const navigate = useNavigate();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+
+  // Load preview data from sessionStorage if in preview mode
+  useEffect(() => {
+    if (preview) {
+      const stored = sessionStorage.getItem('projectPreview');
+      if (stored) {
+        setPreviewData(JSON.parse(stored));
+      }
+    }
+  }, [preview]);
 
   // Mock project data - in real app, fetch by id
-  const project = {
+  const mockProject = {
     id: id,
     title: {
       en: 'Sustainable Atlas Education Hub',
@@ -87,6 +98,9 @@ const ProjectDetail = () => {
     ],
   };
 
+  // Use preview data if in preview mode
+  const project = previewData || mockProject;
+
   const getLocalizedText = (obj) => {
     if (typeof obj === 'string') return obj;
     return obj[language] || obj.en;
@@ -111,6 +125,19 @@ const ProjectDetail = () => {
 
   return (
     <div className="bg-bg-light dark:bg-bg-dark min-h-screen">
+      {/* Preview Banner */}
+      {preview && (
+        <div className="sticky top-0 z-50 bg-primary text-white px-4 py-3 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined">visibility</span>
+            <span className="font-bold">
+              {language === 'ar' ? 'وضع المعاينة - هذا ليس منشوراً بعد' :
+               language === 'fr' ? 'Mode Aperçu - Ce n\'est pas encore publié' :
+               'Preview Mode - Not Published Yet'}
+            </span>
+          </div>
+        </div>
+      )}
       {/* Main Content Container - Two Column Layout on Desktop */}
       <div className="flex flex-col lg:flex-row gap-8 px-4 pb-24 max-w-7xl mx-auto">
         

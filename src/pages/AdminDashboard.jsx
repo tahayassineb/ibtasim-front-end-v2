@@ -3,6 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 // ============================================
 // ADMIN DASHBOARD PAGE - Executive Overview
@@ -189,6 +198,17 @@ const AdminDashboard = () => {
     { id: 3, donor: 'Yassine Kabbaj', initials: 'YK', project: 'Winter Relief', amount: '850 DH', status: 'completed' },
     { id: 4, donor: 'Leila Benani', initials: 'LB', project: 'Medical Aid', amount: '2,500 DH', status: 'completed' },
     { id: 5, donor: 'Amine Jilali', initials: 'AJ', project: 'Clean Water Init.', amount: '10,000 DH', status: 'completed' },
+  ];
+
+  // Chart data for donations
+  const donationChartData = [
+    { name: '01', amount: 2400 },
+    { name: '05', amount: 1398 },
+    { name: '10', amount: 9800 },
+    { name: '15', amount: 3908 },
+    { name: '20', amount: 4800 },
+    { name: '25', amount: 3800 },
+    { name: '30', amount: 4300 },
   ];
 
   // Handle featured projects reordering
@@ -396,12 +416,50 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          {/* Chart Placeholder */}
-          <div className="h-64 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center border border-slate-100 dark:border-slate-700">
-            <div className="text-center">
-              <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2">insert_chart</span>
-              <p className="text-slate-400 dark:text-slate-500 text-sm">Chart visualization coming soon</p>
-            </div>
+          {/* Donations Chart */}
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={donationChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d7477" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#0d7477" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  tickFormatter={(value) => `${value/1000}k`}
+                  dx={-10}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value) => [`${value.toLocaleString()} DH`, 'Amount']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="#0d7477"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorAmount)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 

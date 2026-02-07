@@ -70,6 +70,7 @@ function AppContent() {
           {/* Projects */}
           <Route path="/projects" element={<MainLayout><ProjectsList /></MainLayout>} />
           <Route path="/projects/:id" element={<MainLayout><ProjectDetail /></MainLayout>} />
+          <Route path="/projects/preview-:id" element={<MainLayout><ProjectDetail preview /></MainLayout>} />
           
           {/* About & Contact */}
           <Route path="/about" element={<MainLayout><About /></MainLayout>} />

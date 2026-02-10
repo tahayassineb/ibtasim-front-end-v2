@@ -1,4 +1,4 @@
-// Trigger fresh Vercel deployment - cache bust
+// Trigger fresh Vercel deployment - cache bust v2
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
